@@ -15,7 +15,7 @@ local socket = require("socket")
 local address, port = "localhost", 66666
 local name = "Erland"
 local entity
-local updaterate = .2
+local updaterate = .1
 
 local world = {}
 local t, r = 0
@@ -37,21 +37,20 @@ function love.load()
 	rotationRate = scale * (bpm / 60) / 4
 
 	math.randomseed(os.time())
-	hue = math.random(0,255)
-
-	love.graphics.setColor( HSL(hue,s,l,a) )
-	love.graphics.setBackgroundColor(0,0,0)
-	love.graphics.setLineWidth(4)
+	
 	dt = 0
 	r = 0
 	w,h = width, height
 	love.window.setMode(width, height)
+	
+	hue = math.random(0,255)
+	love.graphics.setColor( HSL(hue,s,l,a) )
+	love.graphics.setBackgroundColor(0,0,0)
+	love.graphics.setLineWidth(4)
+	
 	ip = getIP()
 	initGPIO()
-	--findServer()
-
-	--local checkServer = timer.performWithDelay( 10 * 1000, findServer, 0 )
-
+	
 	udp = socket.udp()
 	udp:settimeout(0)
 	udp:setpeername(address, port)
@@ -73,8 +72,8 @@ end
 function love.draw()
 	love.graphics.print(name, 10,10)
 	love.graphics.print(bpm, 10,20)
-
-	-- avatar:draw()
+	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
+	
 	x1, y1 = math.cos(dtheta), math.sin(dtheta)
 	x2, y2 = math.cos(theta + dtheta), math.sin(theta + dtheta)
 	x3, y3 = math.cos(2*theta + dtheta), math.sin(2*theta + dtheta)
@@ -84,10 +83,6 @@ function love.draw()
 		love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
 	love.graphics.pop()
 
-	--data, msg_or_ip, port_or_nil = udp:receivefrom()
-	--if data then
-		--print(data)
-	--end
 end
 
 local amp = 0
@@ -108,48 +103,6 @@ function love.update(deltatime)
 	end
 
 
-end
-
-function findServer()
-
-	local newServers = {}
-	local msg = "Heart Monitor"
-	print("finding server")
-	local listen = socket.udp()
-	listen:setsockname( "226.192.1.1", port )
-
-	local name = listen:getsockname()
-	if ( name ) then  --test to see if device supports multicast
-		listen:setoption( "ip-add-membership", { multiaddr="226.192.1.1", interface = ip } )
-	else  --the device doesn't support multicast so we'll listen for broadcast
-		listen:close()  --first we close the old socket; this is important
-		listen = socket.udp()  --make a new socket
-		listen:setsockname( ip, port )  --set the socket name to the real IP address
-	end
-
-	listen:settimeout( 0 )  --move along if there is nothing to hear
-
-	local counter = 0  --pulse counter
-
-	repeat
-		local data, remoteIp, remotePort = listen:receivefrom()
-		print("receiving", data, remoteIp, remotePort)
-
-		if data and data == msg then
-			if not newServers[ip] then
-				print( "I hear a server:", ip, port )
-				local params = { ["ip"]=ip, ["port"]=port }
-				newServers[ip] = params
-				-- connect immediately
-				udp = socket.udp()
-				udp:settimeout(0)
-				udp:setpeername(address, port)
-				udp:setoption('broadcast', true)
-
-			end
-		end
-	until not data
-	print("end findserver")
 end
 
 function getIP()

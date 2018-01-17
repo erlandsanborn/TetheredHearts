@@ -2,7 +2,6 @@
 -- see: https://github.com/Neopallium/lua-handlers
 -- and: https://github.com/aubio/aubio
 
-require("io")
 local socket = require("socket")
 local address, port = "localhost", 66666
 local width, height
@@ -30,38 +29,36 @@ function love.load()
 	udp = socket.udp()
 	udp:settimeout(0)
 	udp:setsockname(address, port)
-
-	canvas = love.graphics.newCanvas(width, height)
-
+	
 	love.graphics.setBackgroundColor(0,0,0)
-
-end
-
-function love.draw()
-	--love.graphics.clear()
+	love.graphics.setColor(255,255,255)
+	
 	x1, y1 = math.cos(dtheta), math.sin(dtheta)
 	x2, y2 = math.cos(theta + dtheta), math.sin(theta + dtheta)
 	x3, y3 = math.cos(2*theta + dtheta), math.sin(2*theta + dtheta)
+	drawBackground()
+	
+end
 
+function love.draw()
+	t = love.timer.getTime()
+	love.graphics.print(love.timer.getFPS(), margin, height - margin - 25)
+	
 	local i = 0
-
+	
 	for name,player in pairs(world) do
         local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
 		love.graphics.setColor(HSL(player.hue, s, l, a))
-		love.graphics.print(stats, 10, i * 25)
+		love.graphics.print(stats, 10, i * 25 + margin)
+		i = i + 1
 	end
 
-	--~ love.graphics.setCanvas(canvas)
-	--~ love.graphics.clear()
-	love.graphics.setColor(255,255,255)
-	drawBackground()
-
+	local i = 0
 	for name,player in pairs(world) do
         local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
 
 		rotation = (2 * t * player.bps * math.pi) % (2 * math.pi)
 		love.graphics.setColor(HSL(player.hue, s, l, a))
-		love.graphics.print(stats, 10, i * 25)
 		love.graphics.setLineWidth(4)
 		love.graphics.push()
 			love.graphics.translate(x0, y0)
@@ -77,7 +74,6 @@ function love.draw()
 		end
 
     end
-    --~ love.graphics.setCanvas()
 
     for name,player in pairs(world) do
 
@@ -96,43 +92,44 @@ function love.draw()
 			end
 		end
 	end
-
-    --~ love.graphics.push()
-    --~ love.graphics.scale(.75, .75)
-    --~ love.graphics.draw(canvas)
-    --~ love.graphics.pop();
-
+	
 end
 
 
 function love.update(deltatime)
-	t = love.timer.getTime()
+	
 	dt = dt + deltatime
-	data, msg_or_ip, port_or_nil = udp:receivefrom()
-	if data then
-		playerName, attributes = data:match("(%S*) (.*)")
-		color,rate,pulse = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
-		if world[playerName] == nil then
-			local pts = List:new()
-			List.push(pts, tonumber(pulse))
-			world[playerName] = {
-				name = playerName,
-				amp = tonumber(pulse),
-				points = pts,
-				hue = tonumber(color),
-				bps = tonumber(rate),
-				ttl = 10
-			}
-		else
-			world[playerName].bps = tonumber(rate)
-			world[playerName].ttl = 10
-			world[playerName].amp = tonumber(pulse),
-			List.push(world[playerName].points, tonumber(pulse))
-			if ( world[playerName].points.last >= graphLength ) then
-				List.shift(world[playerName].points)
+	-- data, msg_or_ip, port_or_nil = udp:receivefrom()
+	
+	-- receive from udp until the buffer is empty
+	repeat 
+		data = udp:receive()
+		if data then
+			playerName, attributes = data:match("(%S*) (.*)")
+			color,rate,pulse = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
+			if world[playerName] == nil then
+				local pts = List:new()
+				List.push(pts, tonumber(pulse))
+				world[playerName] = {
+					name = playerName,
+					amp = tonumber(pulse),
+					points = pts,
+					hue = tonumber(color),
+					bps = tonumber(rate),
+					ttl = 10
+				}
+			else
+				world[playerName].bps = tonumber(rate)
+				world[playerName].ttl = 10
+				world[playerName].amp = tonumber(pulse),
+				List.push(world[playerName].points, tonumber(pulse))
+				if ( world[playerName].points.last >= graphLength ) then
+					List.shift(world[playerName].points)
+				end
 			end
 		end
-	end
+	until not data
+	
 end
 
 List = {}
