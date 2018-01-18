@@ -3,7 +3,7 @@
 -- and: https://github.com/aubio/aubio
 
 local socket = require("socket")
-local address, port = "localhost", 66666
+local address, port = "orbpi.local", 66666
 local width, height
 local entity
 local updaterate = 0.5
@@ -17,6 +17,12 @@ local world = {}
 local s,l,a = 255, 180, 255
 local scale = .125
 local graphLength = 50
+
+--math locals
+local sin = math.sin
+local cos = math.cos
+local pi = math.pi
+local abs = math.abs
 
 local canvas
 
@@ -33,9 +39,9 @@ function love.load()
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setColor(255,255,255)
 	
-	x1, y1 = math.cos(dtheta), math.sin(dtheta)
-	x2, y2 = math.cos(theta + dtheta), math.sin(theta + dtheta)
-	x3, y3 = math.cos(2*theta + dtheta), math.sin(2*theta + dtheta)
+	x1, y1 = cos(dtheta), sin(dtheta)
+	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 	drawBackground()
 	
 end
@@ -57,7 +63,7 @@ function love.draw()
 	for name,player in pairs(world) do
         local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
 
-		rotation = (2 * t * player.bps * math.pi) % (2 * math.pi)
+		rotation = (2 * t * player.bps * pi) % (2 * pi)
 		love.graphics.setColor(HSL(player.hue, s, l, a))
 		love.graphics.setLineWidth(4)
 		love.graphics.push()
@@ -170,8 +176,8 @@ end
 function HSL(h, s, l, a)
 	if s<=0 then return l,l,l,a end
 	h, s, l = h/256*6, s/255, l/255
-	local c = (1-math.abs(2*l-1))*s
-	local x = (1-math.abs(h%2-1))*c
+	local c = (1-abs(2*l-1))*s
+	local x = (1-abs(h%2-1))*c
 	local m,r,g,b = (l-.5*c), 0,0,0
 	if h < 1     then r,g,b = c,x,0
 	elseif h < 2 then r,g,b = x,c,0

@@ -31,19 +31,26 @@ local dtheta = theta - math.pi/2
 local hue
 local s,l,a = 255, 180, 255
 
+local sin = math.sin
+local cos = math.cos
+local pi = math.pi
+local abs = math.abs
+local random = math.random
+local randomseed = math.randomseed
+
 function love.load()
-	math.randomseed(os.time())
-	bpm = math.random(60, 120)
+	randomseed(os.time())
+	bpm = random(60, 120)
 	rotationRate = scale * (bpm / 60) / 4
 
-	math.randomseed(os.time())
+	randomseed(os.time())
 	
 	dt = 0
 	r = 0
 	w,h = width, height
 	love.window.setMode(width, height)
 	
-	hue = math.random(0,255)
+	hue = random(0,255)
 	love.graphics.setColor( HSL(hue,s,l,a) )
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setLineWidth(4)
@@ -74,9 +81,9 @@ function love.draw()
 	love.graphics.print(bpm, 10,20)
 	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
 	
-	x1, y1 = math.cos(dtheta), math.sin(dtheta)
-	x2, y2 = math.cos(theta + dtheta), math.sin(theta + dtheta)
-	x3, y3 = math.cos(2*theta + dtheta), math.sin(2*theta + dtheta)
+	x1, y1 = cos(dtheta), sin(dtheta)
+	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 	love.graphics.push()
 		love.graphics.translate(x0, y0)
 		love.graphics.rotate(r)
@@ -92,9 +99,9 @@ function love.update(deltatime)
 	t = love.timer.getTime()
 
 	-- amp = gpio_in:read()
-	amp = math.random(255)
+	amp = random(255)
 	bps = scale * bpm / 60
-	r = (2 * t * bps * math.pi) % (2 * math.pi)
+	r = (2 * t * bps * pi) % (2 * pi)
 
 	if udp and dt > updaterate then
 		data = string.format("%s %d,%f,%f", name, hue, bps, amp)
@@ -115,8 +122,8 @@ end
 function HSL(h, s, l, a)
 	if s<=0 then return l,l,l,a end
 	h, s, l = h/256*6, s/255, l/255
-	local c = (1-math.abs(2*l-1))*s
-	local x = (1-math.abs(h%2-1))*c
+	local c = (1-abs(2*l-1))*s
+	local x = (1-abs(h%2-1))*c
 	local m,r,g,b = (l-.5*c), 0,0,0
 	if h < 1     then r,g,b = c,x,0
 	elseif h < 2 then r,g,b = x,c,0
