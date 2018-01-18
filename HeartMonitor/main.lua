@@ -26,6 +26,10 @@ local abs = math.abs
 
 local canvas
 
+--debugging tools
+local ding = love.timer.getTime()
+local dong = love.timer.getTime() - ding
+
 function love.load()
 	width = love.graphics.getWidth() - margin
 	height = love.graphics.getHeight() - margin
@@ -45,6 +49,9 @@ function love.load()
 	drawBackground()
 	
 end
+
+
+local ding = love.timer.getTime()
 
 function love.draw()
 	t = love.timer.getTime()
@@ -100,8 +107,10 @@ function love.draw()
 	end
 	
 end
+local dong = love.timer.getTime() - ding
+print( string.format( "love.draw takes %.3f ms", dong * 1000 ))
 
-
+local ding = love.timer.getTime()
 function love.update(deltatime)
 	
 	dt = dt + deltatime
@@ -137,6 +146,8 @@ function love.update(deltatime)
 	until not data
 	
 end
+local dong = love.timer.getTime() - ding
+print( string.format( "love.update takes %.3f ms", dong * 1000 ))
 
 List = {}
 function List.new ()
