@@ -25,7 +25,10 @@ Advanced Options > Resolution > DMT Mode 16 1024x768 60Hz 4:3
 Advanced Options > GL Driver > G1 GL (Full KMS)
 
 
-# Love2D configs
+# Love2D Requirements & Configs
+lua-periphery required to allow GPIO i/o. Clone from git:
+https://github.com/vsergeev/lua-periphery
+
 Copy cavitytemp.lua to cavity.lua, and replace "localhost" with the hostname the monitor will live on.
 Remember to do this for both monitor, and patient.
 
