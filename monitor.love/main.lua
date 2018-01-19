@@ -4,6 +4,7 @@
 require("cavity")
 
 local socket = require("socket")
+local address, port = "heartmonitor.local", 66666
 local address, port = home, 31337
 local width, height
 local entity
@@ -24,7 +25,7 @@ local sin = math.sin
 local cos = math.cos
 local pi = math.pi
 local abs = math.abs
-
+local playerCount
 local canvas
 
 --debugging tools
@@ -36,7 +37,8 @@ function love.load()
 	height = love.graphics.getHeight() - margin
 	unit = width/6
 	x0, y0 = .5 * (width + margin), .5 * (height + margin)
-
+	graphLength = width / 2 - margin
+	
 	udp = socket.udp()
 	udp:settimeout(0)
 	udp:setsockname(address, port)
@@ -57,7 +59,7 @@ local ding = love.timer.getTime()
 function love.draw()
 	t = love.timer.getTime()
 	love.graphics.print(love.timer.getFPS(), margin, height - margin - 25)
-	
+	drawBackground()
 	local i = 0
 	
 	for name,player in pairs(world) do
@@ -94,8 +96,8 @@ function love.draw()
 		if player.points.last >= 0 then
 			local pts = {}
 			for j=player.points.first,player.points.last do
-				local x,y = 10 * (j-player.points.first), 50 * player.points[j] / 255
-				table.insert(pts, width-10*graphLength + x)
+				local x,y = (j-player.points.first), 50 * player.points[j] / 255
+				table.insert(pts, width-graphLength + x)
 				table.insert(pts, y)
 			end
 
@@ -115,7 +117,6 @@ local ding = love.timer.getTime()
 function love.update(deltatime)
 	
 	dt = dt + deltatime
-	-- data, msg_or_ip, port_or_nil = udp:receivefrom()
 	
 	-- receive from udp until the buffer is empty
 	repeat 
@@ -145,7 +146,8 @@ function love.update(deltatime)
 			end
 		end
 	until not data
-	
+	playerCount = 0
+	for _ in pairs(world) do playerCount = playerCount + 1 end
 end
 local dong = love.timer.getTime() - ding
 print( string.format( "love.update takes %.3f ms", dong * 1000 ))
@@ -169,14 +171,26 @@ function List.shift(list)
 end
 
 function drawBackground()
-	love.graphics.setLineWidth(5)
-
+	love.graphics.setColor(255,255,255,255)
+	love.graphics.setLineWidth(4)
 	love.graphics.circle('line', x0, y0, unit)
 	love.graphics.circle('line', x0, y0, 0.5 * unit)
 	love.graphics.circle('line', x0, y0, 1.5 * unit)
-
 	love.graphics.push()
 		love.graphics.translate(x0, y0)
+		-- compute circle color fill
+		love.graphics.setBlendMode('add')
+		for name,player in pairs(world) do
+			local r = (2 * t * player.bps * pi) % (2 * pi)
+			local dr = 2 * sin((r + dtheta) * 3) - 1
+			local alpha = 180  * dr / playerCount + 64
+			love.graphics.setColor(HSL(player.hue, s, l, alpha))
+			love.graphics.circle('fill', x1 * unit, y1 * unit, 0.5 * unit)
+			love.graphics.circle('fill', x2 * unit, y2 * unit, 0.5 * unit)
+			love.graphics.circle('fill', x3 * unit, y3 * unit, 0.5 * unit)
+		end
+		love.graphics.setBlendMode('alpha')
+		love.graphics.setColor(255,255,255,255)
 		love.graphics.circle('line', x1 * unit, y1 * unit, 0.5 * unit)
 		love.graphics.circle('line', x2 * unit, y2 * unit, 0.5 * unit)
 		love.graphics.circle('line', x3 * unit, y3 * unit, 0.5 * unit)
