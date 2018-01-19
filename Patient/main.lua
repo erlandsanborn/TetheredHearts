@@ -6,6 +6,7 @@
 -- periphery lib for GPIO: https://github.com/vsergeev/lua-periphery
 -- 		sudo luarocks install lua-periphery
 
+require("cavity")
 
 local GPIO = require('periphery').GPIO
 local HEART_PIN = 10

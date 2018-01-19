@@ -25,6 +25,11 @@ Advanced Options > Resolution > DMT Mode 16 1024x768 60Hz 4:3
 Advanced Options > GL Driver > G1 GL (Full KMS)
 
 
+# Love2D configs
+Copy cavitytemp.lua to cavity.lua, and replace "localhost" with the hostname the monitor will live on.
+Remember to do this for both monitor, and patient.
+
+
 # Usage
 HeartMonitor acts as server, whereas Patient acts as client. Configure local address in main.lua (for both) to where monitor will be running, to ensure patients are targeting correct monitor location. Receiving bluescreen with udp:send error while running Patient, will indicate it is targeting wrong address.
 

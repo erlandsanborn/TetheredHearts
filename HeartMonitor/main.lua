@@ -1,9 +1,11 @@
 -- Server --
 -- see: https://github.com/Neopallium/lua-handlers
 -- and: https://github.com/aubio/aubio
+require("cavity")
 
 local socket = require("socket")
 local address, port = "heartmonitor.local", 66666
+local address, port = home, 31337
 local width, height
 local entity
 local updaterate = 0.5
