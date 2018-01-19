@@ -8,8 +8,8 @@
 
 require("cavity")
 
-local GPIO = require('periphery').GPIO
-local HEART_PIN = 10
+--local GPIO = require('periphery').GPIO
+--local HEART_PIN = 10
 
 local width, height = 400, 400
 local socket = require("socket")
@@ -57,7 +57,7 @@ function love.load()
 	love.graphics.setLineWidth(4)
 	
 	ip = getIP()
-	initGPIO()
+--	initGPIO()
 	
 	udp = socket.udp()
 	udp:settimeout(0)
@@ -68,7 +68,7 @@ function love.load()
 end
 
 function initGPIO()
-	local gpio_in = GPIO(HEART_PIN, "in")
+--	local gpio_in = GPIO(HEART_PIN, "in")
 
 	--local value = gpio_in:read()
 	--gpio_out:write(not value)
