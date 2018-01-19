@@ -13,7 +13,7 @@ local HEART_PIN = 10
 
 local width, height = 400, 400
 local socket = require("socket")
-local address, port = "heartmonitor.local", 66666
+local address, port = home, 31337
 local name = "Erland"
 local entity
 local updaterate = .1
