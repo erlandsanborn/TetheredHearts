@@ -3,7 +3,7 @@
 -- and: https://github.com/aubio/aubio
 
 local socket = require("socket")
-local address, port = "localhost", 66666
+local address, port = "orbpi.local", 66666
 local width, height
 local entity
 local updaterate = 0.5
@@ -18,7 +18,17 @@ local s,l,a = 255, 180, 255
 local scale = .125
 local graphLength = 50
 
+--math locals
+local sin = math.sin
+local cos = math.cos
+local pi = math.pi
+local abs = math.abs
+
 local canvas
+
+--debugging tools
+local ding = love.timer.getTime()
+local dong = love.timer.getTime() - ding
 
 function love.load()
 	width = love.graphics.getWidth() - margin
@@ -33,12 +43,15 @@ function love.load()
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setColor(255,255,255)
 	
-	x1, y1 = math.cos(dtheta), math.sin(dtheta)
-	x2, y2 = math.cos(theta + dtheta), math.sin(theta + dtheta)
-	x3, y3 = math.cos(2*theta + dtheta), math.sin(2*theta + dtheta)
+	x1, y1 = cos(dtheta), sin(dtheta)
+	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 	drawBackground()
 	
 end
+
+
+local ding = love.timer.getTime()
 
 function love.draw()
 	t = love.timer.getTime()
@@ -57,7 +70,7 @@ function love.draw()
 	for name,player in pairs(world) do
         local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
 
-		rotation = (2 * t * player.bps * math.pi) % (2 * math.pi)
+		rotation = (2 * t * player.bps * pi) % (2 * pi)
 		love.graphics.setColor(HSL(player.hue, s, l, a))
 		love.graphics.setLineWidth(4)
 		love.graphics.push()
@@ -94,8 +107,10 @@ function love.draw()
 	end
 	
 end
+local dong = love.timer.getTime() - ding
+print( string.format( "love.draw takes %.3f ms", dong * 1000 ))
 
-
+local ding = love.timer.getTime()
 function love.update(deltatime)
 	
 	dt = dt + deltatime
@@ -131,6 +146,8 @@ function love.update(deltatime)
 	until not data
 	
 end
+local dong = love.timer.getTime() - ding
+print( string.format( "love.update takes %.3f ms", dong * 1000 ))
 
 List = {}
 function List.new ()
@@ -170,8 +187,8 @@ end
 function HSL(h, s, l, a)
 	if s<=0 then return l,l,l,a end
 	h, s, l = h/256*6, s/255, l/255
-	local c = (1-math.abs(2*l-1))*s
-	local x = (1-math.abs(h%2-1))*c
+	local c = (1-abs(2*l-1))*s
+	local x = (1-abs(h%2-1))*c
 	local m,r,g,b = (l-.5*c), 0,0,0
 	if h < 1     then r,g,b = c,x,0
 	elseif h < 2 then r,g,b = x,c,0
@@ -180,4 +197,11 @@ function HSL(h, s, l, a)
 	elseif h < 5 then r,g,b = x,0,c
 	else              r,g,b = c,0,x
 	end return (r+m)*255,(g+m)*255,(b+m)*255,a
+end
+
+function love.keypressed(k)
+	--q is for quit this shit
+	if k == 'q' then
+		love.event.quit()
+	end
 end
