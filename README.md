@@ -34,7 +34,8 @@ Remember to do this for both monitor, and patient.
 
 
 # Usage
-HeartMonitor acts as server, whereas Patient acts as client. Configure local address in main.lua (for both) to where monitor will be running, to ensure patients are targeting correct monitor location. Receiving bluescreen with udp:send error while running Patient, will indicate it is targeting wrong address.
+HeartMonitor acts as server, whereas Patient acts as client. Configure local address in main.lua (for both) to where monitor will be running, to ensure patients are targeting correct monitor location. Receiving bluescreen with udp:send error while running Patient, will indicate it is targeting wrong address.<br/>
+See requirements above for configuring cavity.lua
 
 
 # Misc
