@@ -12,7 +12,7 @@ local HEART_PIN = 10
 
 local width, height = 400, 400
 local socket = require("socket")
-local address, port = "localhost", 66666
+local address, port = "heartmonitor.local", 66666
 local name = "Erland"
 local entity
 local updaterate = .1
@@ -103,7 +103,7 @@ function love.update(deltatime)
 	bps = scale * bpm / 60
 	r = (2 * t * bps * pi) % (2 * pi)
 
-	if udp and dt > updaterate then
+	if udp then --and dt > updaterate then
 		data = string.format("%s %d,%f,%f", name, hue, bps, amp)
 		udp:send(data)
 		dt = 0
