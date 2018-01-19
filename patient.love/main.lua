@@ -134,3 +134,11 @@ function HSL(h, s, l, a)
 	else              r,g,b = c,0,x
 	end return (r+m)*255,(g+m)*255,(b+m)*255,a
 end
+
+
+function love.keypressed(k)
+        --q is for quit this shit
+        if k == 'q' then
+                love.event.quit()
+        end
+end
