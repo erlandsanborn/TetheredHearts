@@ -31,6 +31,7 @@ Advanced Options > Resolution > DMT Mode 16 1024x768 60Hz 4:3
 3. GL Driver <br/>
 Advanced Options > GL Driver > G1 GL (Full KMS)
 </li>
+</ul>
 </p>
 
 <h2>Love2D Requirements & Configs</h2>
