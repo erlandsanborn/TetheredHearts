@@ -1,4 +1,4 @@
-<div style="display: block;"><span style="text-align: center;">img src="https://www.suspension.nyc/assets/img/logo.png"></span></div>
+<div style="display: block;"><span style="text-align: center;"><img src="https://www.suspension.nyc/assets/img/logo.png"></span></div>
 
 # TetheredHearts
 <p>A game you play with your heart... <br/>
