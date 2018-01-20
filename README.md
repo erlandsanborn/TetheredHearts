@@ -1,3 +1,5 @@
+<div style="display: block;"><span style="text-align: center;">img src="https://www.suspension.nyc/assets/img/logo.png"></span></div>
+
 # TetheredHearts
 <p>A game you play with your heart... <br/>
 ...while suspended from hooks.</p>
@@ -18,17 +20,17 @@ Pulsesensor</p>
 <p>Using raspi-config, ensure the following are configured.<br />
 <ul>
 <li>
-1. Memory Split<br/>
+<strong>Memory Split</strong><br/>
 Advanced Options > Memory Split > Set to minimum 128
 </li>
 
 <li>
-2. Resolution (optional)<br/>
+<strong>Resolution</strong> (optional)<br/>
 Advanced Options > Resolution > DMT Mode 16 1024x768 60Hz 4:3
 </li>
 
 <li>
-3. GL Driver <br/>
+<strong>GL Driver</strong> <br/>
 Advanced Options > GL Driver > G1 GL (Full KMS)
 </li>
 </ul>
