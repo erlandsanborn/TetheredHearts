@@ -1,41 +1,56 @@
+<div style="display: block;"><span style="text-align: center;"><img src="https://www.suspension.nyc/assets/img/logo.png"></span></div>
+
 # TetheredHearts
-A game you play with your heart...
-...while suspended from hooks.
+<p>A game you play with your heart... <br/>
+...while suspended from hooks.</p>
 
 
-# Hardware
-RPI 3 (model B)
-Pulsesensor
+<h2>Hardware</h2>
+<p>RPI 3 (model B)<br/>
+Pulsesensor</p>
 
 
-# Software
-Runs on <a href="https://love2d.org/">LÖVE 2D</a>
+<h2>Software </h2>
+
+<p>Runs on <a href="https://love2d.org/">LÖVE 2D</a></p>
 
 
-# RPI Environment & Architecture configs
-Using raspi-config, ensure the following are configured.
+<h2>RPI Environment & Architecture configs</h2>
 
-1. Memory Split
+<p>Using raspi-config, ensure the following are configured.<br />
+<ul>
+<li>
+<strong>Memory Split</strong><br/>
 Advanced Options > Memory Split > Set to minimum 128
+</li>
 
-2. Resolution (optional)
+<li>
+<strong>Resolution</strong> (optional)<br/>
 Advanced Options > Resolution > DMT Mode 16 1024x768 60Hz 4:3
+</li>
 
-3. GL Driver 
+<li>
+<strong>GL Driver</strong> <br/>
 Advanced Options > GL Driver > G1 GL (Full KMS)
+</li>
+</ul>
+</p>
+
+<h2>Love2D Requirements & Configs</h2>
+
+<p>lua-periphery required to allow GPIO i/o. Clone from git:<br/>
+https://github.com/vsergeev/lua-periphery</p>
+
+<p>Copy cavitytemp.lua to cavity.lua, and replace "localhost" with the hostname the monitor will live on.
+Remember to do this for both monitor, and patient.</p>
 
 
-# Love2D Requirements & Configs
-lua-periphery required to allow GPIO i/o. Clone from git:
-https://github.com/vsergeev/lua-periphery
+<h2>Usage</h2>
 
-Copy cavitytemp.lua to cavity.lua, and replace "localhost" with the hostname the monitor will live on.
-Remember to do this for both monitor, and patient.
+<p>HeartMonitor acts as server, whereas Patient acts as client. Configure local address in main.lua (for both) to where monitor will be running, to ensure patients are targeting correct monitor location. Receiving bluescreen with udp:send error while running Patient, will indicate it is targeting wrong address.</p>
+<p>See requirements above for configuring cavity.lua</p>
 
 
-# Usage
-HeartMonitor acts as server, whereas Patient acts as client. Configure local address in main.lua (for both) to where monitor will be running, to ensure patients are targeting correct monitor location. Receiving bluescreen with udp:send error while running Patient, will indicate it is targeting wrong address.
+<h2>Misc</h2>
 
-
-# Misc
-Using VNC to get RPI display on local machine. 
+<p>Using VNC to get RPI display on local machine. </p>
