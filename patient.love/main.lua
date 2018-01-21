@@ -8,22 +8,23 @@
 
 require("cavity")
 
-local GPIO = require('periphery').GPIO
+-- local GPIO = require('periphery').GPIO
 local HEART_PIN = 10
 
 local width, height = 400, 400
+local graphLength = 50
 local socket = require("socket")
 local address, port = home, 31337
 local name = "Erland"
 local entity
 local updaterate = .1
+local margin = 4
 
 local world = {}
 local t, r = 0
 
 local bpm
 local scale = .125
-local rotationRate
 
 local unit = width/4
 local x0, y0 = width/2, height/2
@@ -38,37 +39,40 @@ local pi = math.pi
 local abs = math.abs
 local random = math.random
 local randomseed = math.randomseed
+local points
 
 function love.load()
 	randomseed(os.time())
 	bpm = random(60, 120)
-	rotationRate = scale * (bpm / 60) / 4
 
 	randomseed(os.time())
-	
+
 	dt = 0
 	r = 0
 	w,h = width, height
 	love.window.setMode(width, height)
-	
+
 	hue = random(0,255)
 	love.graphics.setColor( HSL(hue,s,l,a) )
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setLineWidth(4)
-	
+
 	ip = getIP()
-	initGPIO()
-	
+	--initGPIO()
+
 	udp = socket.udp()
 	udp:settimeout(0)
 	udp:setpeername(address, port)
 	udp:setoption('broadcast', true)
 	name = string.format("%s_%s", name, love.timer.getTime())
 
+	graphLength = width / 2 - margin
+	points = List:new()
+
 end
 
 function initGPIO()
-	local gpio_in = GPIO(HEART_PIN, "in")
+	--local gpio_in = GPIO(HEART_PIN, "in")
 
 	--local value = gpio_in:read()
 	--gpio_out:write(not value)
@@ -81,7 +85,7 @@ function love.draw()
 	love.graphics.print(name, 10,10)
 	love.graphics.print(bpm, 10,20)
 	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
-	
+	love.graphics.setLineWidth(4)
 	x1, y1 = cos(dtheta), sin(dtheta)
 	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
 	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
@@ -90,6 +94,21 @@ function love.draw()
 		love.graphics.rotate(r)
 		love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
 	love.graphics.pop()
+
+	if points.last >= 0 then
+			local pts = {}
+			for j=points.first,points.last do
+				local x,y = (j-points.first), 50 * points[j] / 255
+				table.insert(pts, width-graphLength + x)
+				table.insert(pts, y)
+			end
+
+			love.graphics.setColor(HSL(hue, s, l, a))
+			if ( table.getn(pts) >= 4 ) then
+				love.graphics.setLineWidth(1)
+				love.graphics.line(pts)
+			end
+		end
 
 end
 
@@ -101,6 +120,11 @@ function love.update(deltatime)
 
 	-- amp = gpio_in:read()
 	amp = random(255)
+	List.push(points, amp)
+	if ( points.last >= graphLength ) then
+		List.shift(points)
+	end
+
 	bps = scale * bpm / 60
 	r = (2 * t * bps * pi) % (2 * pi)
 
@@ -118,6 +142,24 @@ function getIP()
     s:setpeername( "74.125.115.104", 80 )  --Google website
     local ip, sock = s:getsockname()
     return ip
+end
+
+List = {}
+function List.new ()
+	return {first = 0, last = -1}
+end
+function List.push(list, value)
+	local last = list.last + 1
+	list.last = last
+	list[last] = value
+end
+function List.shift(list)
+	local first = list.first
+	if first > list.last then error("list is empty") end
+	local value = list[first]
+	list[first] = nil        -- to allow garbage collection
+	list.first = first + 1
+	return value
 end
 
 function HSL(h, s, l, a)
