@@ -9,25 +9,26 @@
 require("cavity")
 
 -- local GPIO = require('periphery').GPIO
+
 local HEART_PIN = 10
 
 local width, height = 400, 400
 local graphLength = 50
 local socket = require("socket")
 local address, port = home, 31337
+
 local name = "Erland"
 local entity
 local updaterate = .1
 local margin = 4
 
-local world = {}
 local t, r = 0
 
 local bpm
 local scale = .125
-
+local amp = 0
 local unit = width/4
-local x0, y0 = width/2, height/2
+local x0, y0
 local theta = 2 * math.pi / 3
 local dtheta = theta - math.pi/2
 local hue
@@ -39,18 +40,36 @@ local pi = math.pi
 local abs = math.abs
 local random = math.random
 local randomseed = math.randomseed
+local max = math.max
 local points
+local font = love.graphics.newFont("8bitwonder.TTF", 12)
+local avatar = love.graphics.newCanvas()
+local tracer = love.graphics.newCanvas()
+local rising = false
+local threshold = 100
+local tapCount = 0;
+local msecsFirst = 0;
+local msecsPrevious = 0;
+local resetDelay = 2
+
+local inc = 0
+--function server:receive(url, ...)
+--  print(url, ...)
+--end
 
 function love.load()
 	randomseed(os.time())
 	bpm = random(60, 120)
 
 	randomseed(os.time())
-
+	inc = random(5, 15)
 	dt = 0
 	r = 0
-	w,h = width, height
-	love.window.setMode(width, height)
+	width = love.graphics.getWidth() - margin
+	height = love.graphics.getHeight() - margin
+	x0,y0 = width/2, height/2
+
+  love.graphics.setFont(font)
 
 	hue = random(0,255)
 	love.graphics.setColor( HSL(hue,s,l,a) )
@@ -64,7 +83,7 @@ function love.load()
 	udp:settimeout(0)
 	udp:setpeername(address, port)
 	udp:setoption('broadcast', true)
-	name = string.format("%s_%s", name, love.timer.getTime())
+	name = string.format("%s-%s", name, math.floor(love.timer.getTime() % 1000) )
 
 	graphLength = width / 2 - margin
 	points = List:new()
@@ -81,60 +100,112 @@ function initGPIO()
 	--gpio_out:close()
 end
 
+
 function love.draw()
-	love.graphics.print(name, 10,10)
-	love.graphics.print(bpm, 10,20)
+	love.graphics.print(string.format("%s\t%s bpm", name, bpm), 10,10)
+	--love.graphics.print(bpm, 10,30)
 	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
 	love.graphics.setLineWidth(4)
 	x1, y1 = cos(dtheta), sin(dtheta)
 	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
 	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
-	love.graphics.push()
-		love.graphics.translate(x0, y0)
-		love.graphics.rotate(r)
-		love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-	love.graphics.pop()
 
+	-- render avatar with tracer
+	love.graphics.setCanvas(avatar)
+		love.graphics.draw(tracer)
+		love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
+		love.graphics.push()
+			love.graphics.translate(x0, y0)
+			love.graphics.rotate(r)
+			love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+		love.graphics.pop()
+
+	-- render tracer image
+	love.graphics.setCanvas(tracer)
+		love.graphics.clear()
+		love.graphics.draw(avatar)
+	love.graphics.setCanvas()
+
+	love.graphics.draw(avatar)
+
+	-- draw ekg graph
 	if points.last >= 0 then
-			local pts = {}
-			for j=points.first,points.last do
-				local x,y = (j-points.first), 50 * points[j] / 255
-				table.insert(pts, width-graphLength + x)
-				table.insert(pts, y)
-			end
-
-			love.graphics.setColor(HSL(hue, s, l, a))
-			if ( table.getn(pts) >= 4 ) then
-				love.graphics.setLineWidth(1)
-				love.graphics.line(pts)
-			end
+		local pts = {}
+		for j=points.first,points.last do
+			local x,y = (j-points.first), 50 - 50 * points[j] / 255
+			table.insert(pts, width-graphLength + x)
+			table.insert(pts, y)
 		end
+
+		love.graphics.setColor(HSL(hue, s, l, a))
+		if ( table.getn(pts) >= 4 ) then
+			love.graphics.setLineWidth(1)
+			love.graphics.line(pts)
+
+			love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
+		end
+	end
 
 end
 
-local amp = 0
+local maxAmp = 0
 
 function love.update(deltatime)
-	dt = dt + deltatime
-	t = love.timer.getTime()
 
 	-- amp = gpio_in:read()
-	amp = random(255)
+	amp = amp + inc
+	if ( amp >= 255 ) then amp = 0 end
+
+	-- adjust threshold slightly under max amp from heart monitor
+	maxAmp = max(amp, maxAmp)
+	threshold = maxAmp - 20
+
+	bps = scale * bpm / 60
+	r = r + bps / 10
+
+	-- detect bpm from ekg peak
+	if ( rising == false and amp > threshold ) then
+		rising = true
+		tap()
+	elseif ( rising == true and amp <= threshold ) then
+		rising = false
+	end
+
 	List.push(points, amp)
 	if ( points.last >= graphLength ) then
 		List.shift(points)
 	end
 
-	bps = scale * bpm / 60
-	r = (2 * t * bps * pi) % (2 * pi)
-
 	if udp then --and dt > updaterate then
-		data = string.format("%s %d,%f,%f", name, hue, bps, amp)
+		data = string.format("%s %d,%f,%d,%f", name, hue, bps, amp, r)
+
 		udp:send(data)
 		dt = 0
 	end
+	love.timer.sleep(.01)
+end
 
+function tap()
+	  local msecs = love.timer.getTime() * 1000
+	  if ((msecs - msecsPrevious) > 1000 * resetDelay) then
+	    tapCount = 0;
+	  end
 
+	  if (tapCount == 0) then
+	    msecsFirst = msecs;
+	    tapCount = 1;
+	  else
+	    bpmAvg = 60000 * tapCount / (msecs - msecsFirst);
+	    bpm = math.floor(bpmAvg) -- * 100) / 100;
+	    tapCount = tapCount + 1
+		end
+	  msecsPrevious = msecs;
+end
+
+function oscToFloat(bytes)
+	local result = 0
+
+	return result
 end
 
 function getIP()
