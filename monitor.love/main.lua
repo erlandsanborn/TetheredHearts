@@ -26,6 +26,7 @@ local pi = math.pi
 local abs = math.abs
 local playerCount
 local canvas
+local graphHeight = 50
 
 --debugging tools
 local ding = love.timer.getTime()
@@ -34,95 +35,127 @@ local dong = love.timer.getTime() - ding
 function love.load()
 	width = love.graphics.getWidth() - margin
 	height = love.graphics.getHeight() - margin
+
 	unit = width/6
 	x0, y0 = .5 * (width + margin), .5 * (height + margin)
 	graphLength = width / 2 - margin
-	
+	graphHeight = .5 * (height - 3 * unit - margin)
 	udp = socket.udp()
 	udp:settimeout(0)
 	udp:setsockname(address, port)
-	
+
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setColor(255,255,255)
-	
+
+	scene = love.graphics.newCanvas()
+	tracer = love.graphics.newCanvas()
+	background = love.graphics.newCanvas()
+	players = love.graphics.newCanvas()
+
 	x1, y1 = cos(dtheta), sin(dtheta)
 	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
 	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
+
 	drawBackground()
-	
+
 end
 
 
 local ding = love.timer.getTime()
+local buffer = love.graphics.newCanvas()
 
 function love.draw()
 	t = love.timer.getTime()
-	love.graphics.print(love.timer.getFPS(), margin, height - margin - 25)
-	drawBackground()
-	local i = 0
-	
+	love.graphics.setColor(255,255,255)
+	love.graphics.draw(background)
+	--~ scene:renderTo(function()
+		--~ love.graphics.clear(0,0,0,0)
+	--~ end)
+
+	i = 0
 	for name,player in pairs(world) do
-        local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
-		love.graphics.setColor(HSL(player.hue, s, l, a))
+		--love.graphics.setCanvas()
+
+		local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
+		love.graphics.setColor( HSL(player.hue,s,l, 255) )
 		love.graphics.print(stats, 10, i * 25 + margin)
-		i = i + 1
-	end
-
-	local i = 0
-	for name,player in pairs(world) do
-        local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
-
-		rotation = (2 * t * player.bps * pi) % (2 * pi)
-		love.graphics.setColor(HSL(player.hue, s, l, a))
-		love.graphics.setLineWidth(4)
-		love.graphics.push()
-			love.graphics.translate(x0, y0)
-			love.graphics.rotate(rotation)
-			love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-		love.graphics.pop()
-
-		i = i + 1
-		player.ttl = player.ttl - 1
-
-		if player.ttl == 0 then
-			world[name] = nil
-		end
-
-    end
-
-    for name,player in pairs(world) do
 
 		if player.points.last >= 0 then
 			local pts = {}
 			for j=player.points.first,player.points.last do
-				local x,y = (j-player.points.first), 50 * player.points[j] / 255
+				local x,y = (j-player.points.first), graphHeight * player.points[j] / 255
 				table.insert(pts, width-graphLength + x)
 				table.insert(pts, y)
 			end
 
-			love.graphics.setColor(HSL(player.hue, s, l, a))
 			if ( table.getn(pts) >= 4 ) then
 				love.graphics.setLineWidth(1)
 				love.graphics.line(pts)
 			end
 		end
+
+		--love.graphics.setCanvas(player.avatar)
+		--love.graphics.clear(0,0,0,0)
+		--love.graphics.draw(player.tracer)
+		love.graphics.push()
+			love.graphics.translate(x0, y0)
+			love.graphics.setLineWidth(4)
+
+			-- compute circle alpha, mapped to rotation offset from circle center
+			local dr = 2 * sin((player.rotation + dtheta) * 3) - 1
+			local alpha = (255-100)  * dr / playerCount + 100
+
+			love.graphics.setColor(HSL(player.hue, s, l, alpha))
+			love.graphics.circle('fill', x1 * unit, y1 * unit, 0.5 * unit)
+			love.graphics.circle('fill', x2 * unit, y2 * unit, 0.5 * unit)
+			love.graphics.circle('fill', x3 * unit, y3 * unit, 0.5 * unit)
+
+			-- draw triangle
+			love.graphics.rotate(player.rotation)
+			love.graphics.setColor( HSL(player.hue,s,l,255)) --player.amp / 255 * 55 + 200) )
+			love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+		love.graphics.pop()
+
+		--love.graphics.setCanvas(player.tracer)
+		--love.graphics.clear(0,0,0,0)
+		love.graphics.draw(player.avatar)
+
+		--love.graphics.setCanvas(scene)
+		--love.graphics.setBlendMode("add")
+		--love.graphics.draw(player.avatar)
+
+		player.ttl = player.ttl - 1
+
+		if player.ttl == 0 then
+			world[name] = nil
+		end
+		i = i + 1
 	end
-	
+
+	--love.graphics.setCanvas()
+	--love.graphics.setBlendMode("alpha")
+	--~ love.graphics.print(love.timer.getFPS(), margin, height - margin - 25)
+	--~ love.graphics.setColor(255,255,255,255)
+
+	--love.graphics.setBlendMode("add")
+	--love.graphics.draw(scene)
+
 end
+
 local dong = love.timer.getTime() - ding
 print( string.format( "love.draw takes %.3f ms", dong * 1000 ))
 
 local ding = love.timer.getTime()
 function love.update(deltatime)
-	
+
 	dt = dt + deltatime
-	
+
 	-- receive from udp until the buffer is empty
-	repeat 
+	repeat
 		data = udp:receive()
 		if data then
 			playerName, attributes = data:match("(%S*) (.*)")
-			color,rate,pulse = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
+			color,rate,pulse,rot = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
 			if world[playerName] == nil then
 				local pts = List:new()
 				List.push(pts, tonumber(pulse))
@@ -132,17 +165,23 @@ function love.update(deltatime)
 					points = pts,
 					hue = tonumber(color),
 					bps = tonumber(rate),
-					ttl = 10
+					rotation = tonumber(rot),
+					ttl = 10,
+					avatar = love.graphics.newCanvas(),
+					tracer = love.graphics.newCanvas()
 				}
 			else
 				world[playerName].bps = tonumber(rate)
 				world[playerName].ttl = 10
-				world[playerName].amp = tonumber(pulse),
+				world[playerName].amp = tonumber(pulse)
+				world[playerName].rotation = tonumber(rot)
 				List.push(world[playerName].points, tonumber(pulse))
 				if ( world[playerName].points.last >= graphLength ) then
 					List.shift(world[playerName].points)
 				end
+
 			end
+
 		end
 	until not data
 	playerCount = 0
@@ -170,32 +209,24 @@ function List.shift(list)
 end
 
 function drawBackground()
-	love.graphics.setColor(255,255,255,255)
-	love.graphics.setLineWidth(4)
-	love.graphics.circle('line', x0, y0, unit)
-	love.graphics.circle('line', x0, y0, 0.5 * unit)
-	love.graphics.circle('line', x0, y0, 1.5 * unit)
-	love.graphics.push()
-		love.graphics.translate(x0, y0)
-		-- compute circle color fill
-		love.graphics.setBlendMode('add')
-		for name,player in pairs(world) do
-			local r = (2 * t * player.bps * pi) % (2 * pi)
-			local dr = 2 * sin((r + dtheta) * 3) - 1
-			local alpha = 180  * dr / playerCount + 64
-			love.graphics.setColor(HSL(player.hue, s, l, alpha))
-			love.graphics.circle('fill', x1 * unit, y1 * unit, 0.5 * unit)
-			love.graphics.circle('fill', x2 * unit, y2 * unit, 0.5 * unit)
-			love.graphics.circle('fill', x3 * unit, y3 * unit, 0.5 * unit)
-		end
-		love.graphics.setBlendMode('alpha')
+	love.graphics.setCanvas(background)
+		love.graphics.clear(0,0,0,0)
 		love.graphics.setColor(255,255,255,255)
-		love.graphics.circle('line', x1 * unit, y1 * unit, 0.5 * unit)
-		love.graphics.circle('line', x2 * unit, y2 * unit, 0.5 * unit)
-		love.graphics.circle('line', x3 * unit, y3 * unit, 0.5 * unit)
-	love.graphics.pop()
+		love.graphics.setLineWidth(4)
+		love.graphics.circle('line', x0, y0, unit)
+		love.graphics.circle('line', x0, y0, 0.5 * unit)
+		love.graphics.circle('line', x0, y0, 1.5 * unit)
+		love.graphics.push()
+			love.graphics.translate(x0, y0)
 
+			love.graphics.setBlendMode('alpha')
+			love.graphics.setColor(255,255,255,255)
+			love.graphics.circle('line', x1 * unit, y1 * unit, 0.5 * unit)
+			love.graphics.circle('line', x2 * unit, y2 * unit, 0.5 * unit)
+			love.graphics.circle('line', x3 * unit, y3 * unit, 0.5 * unit)
+		love.graphics.pop()
 
+	love.graphics.setCanvas()
 end
 
 function HSL(h, s, l, a)
