@@ -63,6 +63,7 @@ local inc = 0
 
 splashvid = love.graphics.newVideo("splash.ogv")
 
+
 function love.load()
 
 	splashvid:play()
