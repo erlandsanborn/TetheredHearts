@@ -18,7 +18,8 @@ local graphLength = 50
 local socket = require("socket")
 local address, port = home, 31337
 
-local name = playername
+local playername = ""
+-- local name = playername
 local entity
 local updaterate = .1
 local margin = 4
@@ -68,12 +69,12 @@ function love.load()
 
 	gamestate = "title"
   love.graphics.setFont(font)	
-	entername = "Enter your name to play!"
+	entername = "Enter your name to play"
 	playername = ""
-	love.keyboard.setKeyRepeat(true)	
+	love.keyboard.setKeyRepeat(true)
 
 	randomseed(os.time())
-	bpm = random(60, 120)
+	bpm = random(60, 80)
 
 	randomseed(os.time())
 	inc = random(5, 15)
@@ -97,7 +98,7 @@ function love.load()
 	udp:settimeout(0)
 	udp:setpeername(address, port)
 	udp:setoption('broadcast', true)
-	name = string.format("%s-%s", name, math.floor(love.timer.getTime() % 1000) )
+	name = string.format("%s-%s", playername, math.floor(love.timer.getTime() % 1000) )
 
 	graphLength = width / 2 - margin
 	points = List:new()
@@ -115,13 +116,17 @@ function initGPIO()
 end
 
 function love.textinput(t)
+      if gamestate == "user" then
 	playername = playername .. t
+      end
 end
 
 function love.keypressed(k)
         --q is for quit this shit
-        if k == 'q' then
-                love.event.quit()
+        if gamestate ~= "user" then
+          if k == 'q' then
+                  love.event.quit()
+          end
         end
 
 	--if k ~= love.key_enter then
@@ -134,13 +139,15 @@ function love.keypressed(k)
 	--	end
 	--end
 	
-	if key == "backspace" then
-		local byteoffset = utf8.offset(playername, -1)
+        if gamestate == "user" then
+	  if k == "backspace" then
+	      	local byteoffset = utf8.offset(playername, -1)
 
 		if byteoffset then
 			playername = string.sub(playername, 1, byteoffset - 1)
 		end
-	end
+	  end
+        end
 end
 
 function love.update(deltatime)
@@ -181,7 +188,7 @@ function love.update(deltatime)
 	end
 
 	if udp then --and dt > updaterate then
-		data = string.format("%s %d,%f,%d,%f", name, hue, bps, amp, r)
+		data = string.format("%s %d,%f,%d,%f", playername, hue, bps, amp, r)
 
 		udp:send(data)
 		dt = 0
@@ -204,7 +211,7 @@ function love.draw()
 
 	elseif gamestate == "playing" then
 
-	love.graphics.print(string.format("%s\t%s bpm", name, bpm), 10,10)
+	love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
 	--love.graphics.print(bpm, 10,30)
 	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
 	love.graphics.setLineWidth(4)
