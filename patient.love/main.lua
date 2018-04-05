@@ -8,7 +8,7 @@
 
 require("cavity")
 local gamestate = "title"
-
+local utf8 = require("utf8")
 -- local GPIO = require('periphery').GPIO
 
 local HEART_PIN = 10
@@ -53,6 +53,8 @@ local msecsFirst = 0;
 local msecsPrevious = 0;
 local resetDelay = 2
 
+local maxAmp = 0
+
 local inc = 0
 --function server:receive(url, ...)
 --  print(url, ...)
@@ -65,10 +67,10 @@ function love.load()
 	splashvid:play()
 
 	gamestate = "title"
-	
+  love.graphics.setFont(font)	
 	entername = "Enter your name to play!"
 	playername = ""
-	love.keyboard.setKeyRepeat(false)	
+	love.keyboard.setKeyRepeat(true)	
 
 	randomseed(os.time())
 	bpm = random(60, 120)
@@ -111,6 +113,83 @@ function initGPIO()
 	--gpio_in:close()
 	--gpio_out:close()
 end
+
+function love.textinput(t)
+	playername = playername .. t
+end
+
+function love.keypressed(k)
+        --q is for quit this shit
+        if k == 'q' then
+                love.event.quit()
+        end
+
+	--if k ~= love.key_enter then
+	--	strName = strName .. string.char(k)
+	--end
+
+	--if gamestate == "title" then
+	--	if key == "s" then
+	--		gamestate = "playing"
+	--	end
+	--end
+	
+	if key == "backspace" then
+		local byteoffset = utf8.offset(playername, -1)
+
+		if byteoffset then
+			playername = string.sub(playername, 1, byteoffset - 1)
+		end
+	end
+end
+
+function love.update(deltatime)
+
+	if gamestate == "title" then
+		if love.keyboard.isDown("s") then
+			gamestate = "user"
+		end
+	elseif gamestate == "user" then
+		if love.keyboard.isDown("return", "enter") then
+			gamestate = "playing"
+		end
+	
+	else
+
+	-- amp = gpio_in:read()
+	amp = amp + inc
+	if ( amp >= 255 ) then amp = 0 end
+
+	-- adjust threshold slightly under max amp from heart monitor
+	maxAmp = max(amp, maxAmp)
+	threshold = maxAmp - 20
+
+	bps = scale * bpm / 60
+	r = r + bps / 10
+
+	-- detect bpm from ekg peak
+	if ( rising == false and amp > threshold ) then
+		rising = true
+		tap()
+	elseif ( rising == true and amp <= threshold ) then
+		rising = false
+	end
+
+	List.push(points, amp)
+	if ( points.last >= graphLength ) then
+		List.shift(points)
+	end
+
+	if udp then --and dt > updaterate then
+		data = string.format("%s %d,%f,%d,%f", name, hue, bps, amp, r)
+
+		udp:send(data)
+		dt = 0
+	end
+	end
+	love.timer.sleep(.01)
+end
+
 
 
 function love.draw()
@@ -173,55 +252,6 @@ function love.draw()
 	end
 end
 
-
-local maxAmp = 0
-
-function love.update(deltatime)
-
-	if gamestate == "title" then
-		if love.keyboard.isDown("s") then
-			gamestate = "user"
-		end
-	elseif gamestate == "user" then
-		if love.keyboard.isDown("return", "enter") then
-			gamestate = "playing"
-		end
-	
-	else
-
-	-- amp = gpio_in:read()
-	amp = amp + inc
-	if ( amp >= 255 ) then amp = 0 end
-
-	-- adjust threshold slightly under max amp from heart monitor
-	maxAmp = max(amp, maxAmp)
-	threshold = maxAmp - 20
-
-	bps = scale * bpm / 60
-	r = r + bps / 10
-
-	-- detect bpm from ekg peak
-	if ( rising == false and amp > threshold ) then
-		rising = true
-		tap()
-	elseif ( rising == true and amp <= threshold ) then
-		rising = false
-	end
-
-	List.push(points, amp)
-	if ( points.last >= graphLength ) then
-		List.shift(points)
-	end
-
-	if udp then --and dt > updaterate then
-		data = string.format("%s %d,%f,%d,%f", name, hue, bps, amp, r)
-
-		udp:send(data)
-		dt = 0
-	end
-	end
-	love.timer.sleep(.01)
-end
 
 function tap()
 	  local msecs = love.timer.getTime() * 1000
@@ -286,32 +316,5 @@ function HSL(h, s, l, a)
 	end return (r+m)*255,(g+m)*255,(b+m)*255,a
 end
 
-function love.keypressed(k)
-        --q is for quit this shit
-        if k == 'q' then
-                love.event.quit()
-        end
 
-	--if k ~= love.key_enter then
-	--	strName = strName .. string.char(k)
-	--end
-
-	--if gamestate == "title" then
-	--	if key == "s" then
-	--		gamestate = "playing"
-	--	end
-	--end
-	
-	if key == "backspace" then
-		local byteoffset = utf8.offset(playername, -1)
-
-		if byteoffset then
-			playername = string.sub(playername, 1, byteoffset - 1)
-		end
-	end
-end
-
-function love.textinput(t)
-	playername = playername .. t
-end
 
