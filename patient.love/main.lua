@@ -68,6 +68,8 @@ function love.load()
 
 	splashvid:play()
 
+        startkey = "Press S to continue"
+
 	gamestate = "title"
   love.graphics.setFont(font)	
 	entername = "Enter your name to play"
@@ -129,6 +131,13 @@ function love.keypressed(k)
                   love.event.quit()
           end
         end
+
+        if gamestate == "title" then
+          if k ~= 'q' then
+                  gamestate = "user"
+          end
+        end
+
 
 	--if k ~= love.key_enter then
 	--	strName = strName .. string.char(k)
@@ -204,6 +213,7 @@ function love.draw()
 
 	if gamestate == "title" then
 		love.graphics.draw(splashvid, 0, 0)
+                --need to print a blinking "press s to start" 
 	
 	elseif gamestate == "user" then
 		
@@ -212,51 +222,51 @@ function love.draw()
 
 	elseif gamestate == "playing" then
 
-	love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
-	--love.graphics.print(bpm, 10,30)
-	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
-	love.graphics.setLineWidth(4)
-	x1, y1 = cos(dtheta), sin(dtheta)
-	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
-	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
+          love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
+          --love.graphics.print(bpm, 10,30)
+          love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
+          love.graphics.setLineWidth(4)
+          x1, y1 = cos(dtheta), sin(dtheta)
+          x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+          x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 
-	-- render avatar with tracer
-	love.graphics.setCanvas(avatar)
-		love.graphics.draw(tracer)
-		love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
-		love.graphics.push()
-			love.graphics.translate(x0, y0)
-			love.graphics.rotate(r)
-			love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-		love.graphics.pop()
+          -- render avatar with tracer
+          love.graphics.setCanvas(avatar)
+                  love.graphics.draw(tracer)
+                  love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
+                  love.graphics.push()
+                          love.graphics.translate(x0, y0)
+                          love.graphics.rotate(r)
+                          love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+                  love.graphics.pop()
 
-	-- render tracer image
-	love.graphics.setCanvas(tracer)
-		love.graphics.clear()
-		love.graphics.draw(avatar)
-	love.graphics.setCanvas()
+          -- render tracer image
+          love.graphics.setCanvas(tracer)
+                  love.graphics.clear()
+                  love.graphics.draw(avatar)
+          love.graphics.setCanvas()
 
-	love.graphics.draw(avatar)
+          love.graphics.draw(avatar)
 
 
 
-	-- draw ekg graph
-	if points.last >= 0 then
-		local pts = {}
-		for j=points.first,points.last do
-			local x,y = (j-points.first), 50 - 50 * points[j] / 255
-			table.insert(pts, width-graphLength + x)
-			table.insert(pts, y)
-		end
+          -- draw ekg graph
+          if points.last >= 0 then
+                  local pts = {}
+                  for j=points.first,points.last do
+                          local x,y = (j-points.first), 50 - 50 * points[j] / 255
+                          table.insert(pts, width-graphLength + x)
+                          table.insert(pts, y)
+                  end
 
-		love.graphics.setColor(HSL(hue, s, l, a))
-		if ( table.getn(pts) >= 4 ) then
-			love.graphics.setLineWidth(1)
-			love.graphics.line(pts)
+                  love.graphics.setColor(HSL(hue, s, l, a))
+                  if ( table.getn(pts) >= 4 ) then
+                          love.graphics.setLineWidth(1)
+                          love.graphics.line(pts)
 
-			love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
-		end
-	end
+                          love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
+                  end
+          end
 	end
 end
 
