@@ -34,6 +34,13 @@ Advanced Options > Resolution > DMT Mode 16 1024x768 60Hz 4:3
 Advanced Options > GL Driver > G1 GL (Full KMS)
 </li>
 </ul>
+
+<p>If using PiLove (patients should be running on it), /boot/config.txt needs to be modified with following configuration:<br/>
+hdmi_group=2<br/>
+hdmi_mode=87<br/>
+hdmi_cvt=800 450 60 1 0 0 0
+</p>
+
 </p>
 
 <h2>Love2D Requirements & Configs</h2>
