@@ -11,7 +11,7 @@ require("cavity")
 local gamestate = "title"
 local utf8 = require("utf8")
 
--- local GPIO = require('periphery').GPIO
+local GPIO = require('periphery').GPIO
 local HEART_PIN = 10
 
 local width, height = 400, 400
@@ -19,12 +19,8 @@ local graphLength = 50
 local socket = require("socket")
 local address, port = home, 31337
 
-<<<<<<< HEAD
-local name = ""
-=======
 local playername = ""
 -- local name = playername
->>>>>>> splash2
 local entity
 local updaterate = .1
 local margin = 4
@@ -105,7 +101,7 @@ function love.load()
 
   love.graphics.setFont(font)
 
-	--hue = random(0,255)
+	hue = random(0,255)
 	colorIndex = random(1,6)
 	playerColor = colors[colorIndex]
 	print(colorIndex, playerColor)
@@ -143,50 +139,6 @@ function love.textinput(t)
       end
 end
 
-<<<<<<< HEAD
-function love.draw()
-	love.graphics.clear()
-	love.graphics.print(string.format("%s\t%s bpm", name, bpm), 10,10)
-	--love.graphics.print(bpm, 10,30)
-	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
-	love.graphics.setLineWidth(4)
-	x1, y1 = cos(dtheta), sin(dtheta)
-	x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
-	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
-
-	-- render avatar with tracer
-	love.graphics.setCanvas(avatar)
-		--love.graphics.draw(tracer)
-		love.graphics.clear()
-		love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b ) --HSL(hue,s,l, amp / 255 * 127 + 128) )
-		love.graphics.push()
-			love.graphics.translate(x0, y0)
-			love.graphics.rotate(r)
-			love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-		love.graphics.pop()
-
-	-- render tracer image
-	love.graphics.setCanvas(tracer)
-		love.graphics.clear()
-		love.graphics.draw(avatar)
-	love.graphics.setCanvas()
-
-	love.graphics.draw(avatar)
-
-	-- draw ekg graph
-	if points.last >= 0 then
-		local pts = {}
-		for j=points.first,points.last do
-			local x,y = (j-points.first), 50 - 50 * points[j] / 255
-			table.insert(pts, width-graphLength + x)
-			table.insert(pts, y)
-		end
-
-		love.graphics.setColor(playerColor.r, playerColor.g, playerColor.b) --HSL(hue, s, l, a))
-		if ( table.getn(pts) >= 4 ) then
-			love.graphics.setLineWidth(1)
-			love.graphics.line(pts)
-=======
 function love.keypressed(k)
         --q is for quit this shit
         if gamestate ~= "user" then
@@ -200,8 +152,6 @@ function love.keypressed(k)
                   gamestate = "user"
           end
         end
->>>>>>> splash2
-
 
 	--if k ~= love.key_enter then
 	--	strName = strName .. string.char(k)
@@ -237,40 +187,40 @@ function love.update(deltatime)
 	
 	else
 
-	-- amp = gpio_in:read()
-	amp = amp + inc
-	if ( amp >= 255 ) then amp = 0 end
+          -- amp = gpio_in:read()
+          amp = amp + inc
+          if ( amp >= 255 ) then amp = 0 end
 
-	-- adjust threshold slightly under max amp from heart monitor
-	maxAmp = max(amp, maxAmp)
-	threshold = maxAmp - 20
+          -- adjust threshold slightly under max amp from heart monitor
+          maxAmp = max(amp, maxAmp)
+          threshold = maxAmp - 20
 
-	bps = scale * bpm / 60
-	r = r + bps / 10
+          bps = scale * bpm / 60
+          r = r + bps / 10
 
-	-- detect bpm from ekg peak
-	if ( rising == false and amp > threshold ) then
-		rising = true
-		tap()
-	elseif ( rising == true and amp <= threshold ) then
-		rising = false
-	end
+          -- detect bpm from ekg peak
+          if ( rising == false and amp > threshold ) then
+                  rising = true
+                  tap()
+          elseif ( rising == true and amp <= threshold ) then
+                  rising = false
+          end
 
-	List.push(points, amp)
-	if ( points.last >= graphLength ) then
-		List.shift(points)
-	end
+          List.push(points, amp)
+          if ( points.last >= graphLength ) then
+                  List.shift(points)
+          end
 
-	if udp then --and dt > updaterate then
-<<<<<<< HEAD
-		data = string.format("%s %d,%d,%d,%f,%d,%f", name, playerColor.r, playerColor.g, playerColor.b, bps, amp, r)
-=======
-		data = string.format("%s %d,%f,%d,%f", playername, hue, bps, amp, r)
+          if udp then --and dt > updaterate then
 
->>>>>>> splash2
-		udp:send(data)
-		dt = 0
-	end
+                  data = string.format("%s %d,%d,%d,%f,%d,%f", playername, playerColor.r, playerColor.g, playerColor.b, bps, amp, r)
+
+                  --data = string.format("%s %d,%f,%d,%f", playername, hue, bps, amp, r)
+
+
+                  udp:send(data)
+                  dt = 0
+          end
 	end
 	love.timer.sleep(.01)
 end
@@ -401,6 +351,3 @@ function HSL(h, s, l, a)
 	else              r,g,b = c,0,x
 	end return (r+m)*255,(g+m)*255,(b+m)*255,a
 end
-
-
-
