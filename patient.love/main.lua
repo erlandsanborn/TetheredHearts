@@ -7,8 +7,7 @@
 -- 		sudo luarocks install lua-periphery
 
 require("cavity")
-
--- local GPIO = require('periphery').GPIO
+--local GPIO = require('periphery').GPIO
 
 local HEART_PIN = 10
 
@@ -17,7 +16,7 @@ local graphLength = 50
 local socket = require("socket")
 local address, port = home, 31337
 
-local name = "Erland"
+local name = ""
 local entity
 local updaterate = .1
 local margin = 4
@@ -56,6 +55,17 @@ local inc = 0
 --function server:receive(url, ...)
 --  print(url, ...)
 --end
+local colors = {}
+table.insert(colors, {r=255,g=0,b=0} )
+table.insert(colors, {r=255,g=20,b=147} )
+
+table.insert(colors, {r=106,g=90,b=205} )
+table.insert(colors, {r=65,g=105,b=225} )
+
+table.insert(colors, {r=152,g=251,b=152} )
+table.insert(colors, {r=0,g=255,b=127} )
+local playerColor = colors[1];
+
 
 function love.load()
 	randomseed(os.time())
@@ -71,8 +81,11 @@ function love.load()
 
   love.graphics.setFont(font)
 
-	hue = random(0,255)
-	love.graphics.setColor( HSL(hue,s,l,a) )
+	--hue = random(0,255)
+	colorIndex = random(1,6)
+	playerColor = colors[colorIndex]
+	print(colorIndex, playerColor)
+	love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b ) --HSL(hue,s,l,a) )
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setLineWidth(4)
 
@@ -102,6 +115,7 @@ end
 
 
 function love.draw()
+	love.graphics.clear()
 	love.graphics.print(string.format("%s\t%s bpm", name, bpm), 10,10)
 	--love.graphics.print(bpm, 10,30)
 	love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
@@ -112,8 +126,9 @@ function love.draw()
 
 	-- render avatar with tracer
 	love.graphics.setCanvas(avatar)
-		love.graphics.draw(tracer)
-		love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
+		--love.graphics.draw(tracer)
+		love.graphics.clear()
+		love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b ) --HSL(hue,s,l, amp / 255 * 127 + 128) )
 		love.graphics.push()
 			love.graphics.translate(x0, y0)
 			love.graphics.rotate(r)
@@ -137,7 +152,7 @@ function love.draw()
 			table.insert(pts, y)
 		end
 
-		love.graphics.setColor(HSL(hue, s, l, a))
+		love.graphics.setColor(playerColor.r, playerColor.g, playerColor.b) --HSL(hue, s, l, a))
 		if ( table.getn(pts) >= 4 ) then
 			love.graphics.setLineWidth(1)
 			love.graphics.line(pts)
@@ -177,8 +192,7 @@ function love.update(deltatime)
 	end
 
 	if udp then --and dt > updaterate then
-		data = string.format("%s %d,%f,%d,%f", name, hue, bps, amp, r)
-
+		data = string.format("%s %d,%d,%d,%f,%d,%f", name, playerColor.r, playerColor.g, playerColor.b, bps, amp, r)
 		udp:send(data)
 		dt = 0
 	end
