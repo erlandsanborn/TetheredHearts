@@ -7,8 +7,11 @@
 -- 		sudo luarocks install lua-periphery
 
 require("cavity")
---local GPIO = require('periphery').GPIO
 
+local gamestate = "title"
+local utf8 = require("utf8")
+
+-- local GPIO = require('periphery').GPIO
 local HEART_PIN = 10
 
 local width, height = 400, 400
@@ -16,7 +19,12 @@ local graphLength = 50
 local socket = require("socket")
 local address, port = home, 31337
 
+<<<<<<< HEAD
 local name = ""
+=======
+local playername = ""
+-- local name = playername
+>>>>>>> splash2
 local entity
 local updaterate = .1
 local margin = 4
@@ -51,6 +59,8 @@ local msecsFirst = 0;
 local msecsPrevious = 0;
 local resetDelay = 2
 
+local maxAmp = 0
+
 local inc = 0
 --function server:receive(url, ...)
 --  print(url, ...)
@@ -67,9 +77,23 @@ table.insert(colors, {r=0,g=255,b=127} )
 local playerColor = colors[1];
 
 
+splashvid = love.graphics.newVideo("splash.ogv")
+
+
 function love.load()
+
+	splashvid:play()
+
+        startkey = "Press S to continue"
+
+	gamestate = "title"
+  love.graphics.setFont(font)	
+	entername = "Enter your name to play"
+	playername = ""
+	love.keyboard.setKeyRepeat(true)
+
 	randomseed(os.time())
-	bpm = random(60, 120)
+	bpm = random(60, 80)
 
 	randomseed(os.time())
 	inc = random(5, 15)
@@ -96,7 +120,7 @@ function love.load()
 	udp:settimeout(0)
 	udp:setpeername(address, port)
 	udp:setoption('broadcast', true)
-	name = string.format("%s-%s", name, math.floor(love.timer.getTime() % 1000) )
+	name = string.format("%s-%s", playername, math.floor(love.timer.getTime() % 1000) )
 
 	graphLength = width / 2 - margin
 	points = List:new()
@@ -113,7 +137,13 @@ function initGPIO()
 	--gpio_out:close()
 end
 
+function love.textinput(t)
+      if gamestate == "user" then
+	playername = playername .. t
+      end
+end
 
+<<<<<<< HEAD
 function love.draw()
 	love.graphics.clear()
 	love.graphics.print(string.format("%s\t%s bpm", name, bpm), 10,10)
@@ -156,16 +186,56 @@ function love.draw()
 		if ( table.getn(pts) >= 4 ) then
 			love.graphics.setLineWidth(1)
 			love.graphics.line(pts)
+=======
+function love.keypressed(k)
+        --q is for quit this shit
+        if gamestate ~= "user" then
+          if k == 'q' then
+                  love.event.quit()
+          end
+        end
 
-			love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
+        if gamestate == "title" then
+          if k ~= 'q' then
+                  gamestate = "user"
+          end
+        end
+>>>>>>> splash2
+
+
+	--if k ~= love.key_enter then
+	--	strName = strName .. string.char(k)
+	--end
+
+	--if gamestate == "title" then
+	--	if key == "s" then
+	--		gamestate = "playing"
+	--	end
+	--end
+	
+        if gamestate == "user" then
+	  if k == "backspace" then
+	      	local byteoffset = utf8.offset(playername, -1)
+
+		if byteoffset then
+			playername = string.sub(playername, 1, byteoffset - 1)
 		end
-	end
-
+	  end
+        end
 end
 
-local maxAmp = 0
-
 function love.update(deltatime)
+
+	if gamestate == "title" then
+		if love.keyboard.isDown("s") then
+			gamestate = "user"
+		end
+	elseif gamestate == "user" then
+		if love.keyboard.isDown("return", "enter") then
+			gamestate = "playing"
+		end
+	
+	else
 
 	-- amp = gpio_in:read()
 	amp = amp + inc
@@ -192,12 +262,82 @@ function love.update(deltatime)
 	end
 
 	if udp then --and dt > updaterate then
+<<<<<<< HEAD
 		data = string.format("%s %d,%d,%d,%f,%d,%f", name, playerColor.r, playerColor.g, playerColor.b, bps, amp, r)
+=======
+		data = string.format("%s %d,%f,%d,%f", playername, hue, bps, amp, r)
+
+>>>>>>> splash2
 		udp:send(data)
 		dt = 0
 	end
+	end
 	love.timer.sleep(.01)
 end
+
+
+
+function love.draw()
+
+	if gamestate == "title" then
+		love.graphics.draw(splashvid, 0, 0)
+                --need to print a blinking "press s to start" 
+	
+	elseif gamestate == "user" then
+		
+		love.graphics.printf(entername, 100, 100, love.graphics.getWidth())
+		love.graphics.printf(playername, 130, 130, love.graphics.getWidth())
+
+	elseif gamestate == "playing" then
+
+          love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
+          --love.graphics.print(bpm, 10,30)
+          love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
+          love.graphics.setLineWidth(4)
+          x1, y1 = cos(dtheta), sin(dtheta)
+          x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+          x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
+
+          -- render avatar with tracer
+          love.graphics.setCanvas(avatar)
+                  love.graphics.draw(tracer)
+                  love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
+                  love.graphics.push()
+                          love.graphics.translate(x0, y0)
+                          love.graphics.rotate(r)
+                          love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+                  love.graphics.pop()
+
+          -- render tracer image
+          love.graphics.setCanvas(tracer)
+                  love.graphics.clear()
+                  love.graphics.draw(avatar)
+          love.graphics.setCanvas()
+
+          love.graphics.draw(avatar)
+
+
+
+          -- draw ekg graph
+          if points.last >= 0 then
+                  local pts = {}
+                  for j=points.first,points.last do
+                          local x,y = (j-points.first), 50 - 50 * points[j] / 255
+                          table.insert(pts, width-graphLength + x)
+                          table.insert(pts, y)
+                  end
+
+                  love.graphics.setColor(HSL(hue, s, l, a))
+                  if ( table.getn(pts) >= 4 ) then
+                          love.graphics.setLineWidth(1)
+                          love.graphics.line(pts)
+
+                          love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
+                  end
+          end
+	end
+end
+
 
 function tap()
 	  local msecs = love.timer.getTime() * 1000
@@ -263,9 +403,4 @@ function HSL(h, s, l, a)
 end
 
 
-function love.keypressed(k)
-        --q is for quit this shit
-        if k == 'q' then
-                love.event.quit()
-        end
-end
+
