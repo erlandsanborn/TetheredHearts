@@ -127,6 +127,13 @@ function love.load()
 	graphLength = width / 2 - margin
 	points = List:new()
 
+  --dmt edges
+  limitUpper = 18
+  limitLower = 6
+  numSegments = limitLower
+  direction = "up"
+  step = bpm / 30000
+
 end
 
 function initGPIO()
@@ -229,6 +236,18 @@ function love.update(deltatime)
                   dt = 0
           end
 	end
+
+        --dmt edges
+        if numSegments > limitUpper and direction == "up" then
+          direction = "down"
+        elseif numSegments < limitLower and direction == "down" then
+          direction = "up"
+        elseif direction == "up" then
+          numSegments = numSegments + step
+        else
+          numSegments = numSegments - step
+        end
+
 	love.timer.sleep(.01)
 end
 
@@ -295,8 +314,24 @@ function love.draw()
                   end
           end
 
-          -- draw fuckerygons
-          --draft:rhombus(400, 200, 65, 65)
+          -- draw fuckerygons for dmt edges
+         
+          --love.graphics.setColor(255, 40, 0, 10)
+          
+          -- draft:compass(cx, cy, width, arcAngle, startAngle, numSegments, wrap, scale, mode)
+            local v = draft:compass(400, 225, 300, 60, 180, numSegments, wrap, scale, mode)
+          
+          -- draft:egg(cx, cy, width, syBottom, syTop, numSegments, mode)
+            -- local v = draft:egg(400, 225, 300, 1, 1, numSegments, 'line')
+          
+          -- draft:circle(cx, cy, radius, numSegments, mode)
+            --local v1 = draft:circle(400, 225, 300, numSegments, 'line')
+          
+          -- draft:arc(cx, cy, radius, arcAngle, startAngle, numSegments, mode)
+            --local v2 = draft:arc(400, 225, 360, 30, 60, numSegments, 'line')
+            
+            draft:linkWeb(v)
+            -- draft:linkTangleWebs(v1, v2)
 
 	end
 end
