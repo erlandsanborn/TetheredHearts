@@ -117,7 +117,10 @@ function love.load()
 
 	ip = getIP()
 	
-
+	updServer = socket.udp()
+	updServer:settimeout(0)
+	updServer:setsockname(address, 31338)
+	
 	udp = socket.udp()
 	udp:settimeout(0)
 	udp:setpeername(address, port)
@@ -126,7 +129,13 @@ function love.load()
 
 	graphLength = width / 2 - margin
 	points = List:new()
-
+	
+	--dmt edges
+	limitUpper = 18
+	limitLower = 6
+	numSegments = limitLower
+	direction = "up"
+	step = bpm / 30000
 end
 
 function love.textinput(t)
@@ -214,7 +223,27 @@ function love.update(deltatime)
 			udp:send(data)
 			dt = 0
 		end
+		
+		serverdata,serverhost,serverport = updServer:receivefrom()
+		if serverdata then
+			-- use data from other players here
+			patientName, attributes = serverdata:match("(%S*) (.*)")
+			red,grn,blu,playerRate,playerAmp,playerRot = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
+			
+		end
 	end
+	
+	--dmt edges
+	--if numSegments > limitUpper and direction == "up" then
+	  --direction = "down"
+	--elseif numSegments < limitLower and direction == "down" then
+	  --direction = "up"
+	--elseif direction == "up" then
+	  --numSegments = numSegments + step
+	--else
+	  --numSegments = numSegments - step
+	--end
+
 	love.timer.sleep(.01)
 end
 
@@ -245,11 +274,15 @@ function love.draw()
 		-- render avatar with tracer
 		love.graphics.setCanvas(avatar)
 			love.graphics.draw(tracer)
-			love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, amp / 255 * 127 + 128) --HSL(hue,s,l, amp / 255 * 127 + 128) )
 			love.graphics.push()
 				love.graphics.translate(x0, y0)
 				love.graphics.rotate(r)
 				love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+				-- draw facemelters here
+				--x1 * unit, y1 * unit 
+				--x2 * unit, y2 * unit
+				--x3 * unit, y3 * unit
 			love.graphics.pop()
 
 		-- render tracer image
@@ -257,9 +290,9 @@ function love.draw()
 			love.graphics.clear()
 			love.graphics.draw(avatar)
 		love.graphics.setCanvas()
-
+		
 		love.graphics.draw(avatar)
-
+		
 		-- draw ekg graph
 		if points.last >= 0 then
 			local pts = {}
@@ -269,7 +302,7 @@ function love.draw()
 				table.insert(pts, y)
 			end
 
-			love.graphics.setColor(HSL(hue, s, l, a))
+			love.graphics.setColor(playerColor.r, playerColor.g, playerColor.b) --HSL(hue, s, l, a))
 			if ( table.getn(pts) >= 4 ) then
 				love.graphics.setLineWidth(1)
 				love.graphics.line(pts)
@@ -280,7 +313,23 @@ function love.draw()
 
 		-- draw fuckerygons
 		--draft:rhombus(400, 200, 65, 65)
+		-- draw fuckerygons for dmt edges
 
+		--love.graphics.setColor(255, 40, 0, 10)
+
+		-- draft:compass(cx, cy, width, arcAngle, startAngle, numSegments, wrap, scale, mode)
+		--local v = draft:compass(400, 225, 300, 60, 180, 8, wrap, scale, mode)
+
+		-- draft:egg(cx, cy, width, syBottom, syTop, numSegments, mode)
+		-- local v = draft:egg(400, 225, 300, 1, 1, numSegments, 'line')
+
+		-- draft:circle(cx, cy, radius, numSegments, mode)
+		--local v1 = draft:circle(400, 225, 300, numSegments, 'line')
+
+		-- draft:arc(cx, cy, radius, arcAngle, startAngle, numSegments, mode)
+		--local v2 = draft:arc(400, 225, 360, 30, 60, numSegments, 'line')
+		
+		-- draft:linkTangleWebs(v1, v2)
 	end
 end
 
