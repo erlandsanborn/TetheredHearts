@@ -7,6 +7,8 @@
 -- 		sudo luarocks install lua-periphery
 
 require("cavity")
+local Draft = require("draft")
+local draft = Draft()
 
 local gamestate = "title"
 local utf8 = require("utf8")
@@ -80,11 +82,15 @@ function love.load()
 
 	splashvid:play()
 
-        startkey = "Press S to continue"
+        --create startkey text with wait/timer
+        blankface = ""
+        spaceface = "Touch space to continue"
+        startkey = blankface
+        kickoff = 0
 
 	gamestate = "title"
   love.graphics.setFont(font)	
-	entername = "Enter your name to play"
+	entername = "Who are you"
 	playername = ""
 	love.keyboard.setKeyRepeat(true)
 
@@ -140,29 +146,12 @@ function love.textinput(t)
 end
 
 function love.keypressed(k)
-        --q is for quit this shit
-        if gamestate ~= "user" then
-          if k == 'q' then
-                  love.event.quit()
-          end
-        end
-
         if gamestate == "title" then
-          if k ~= 'q' then
+          if k == "space" then
                   gamestate = "user"
           end
         end
 
-	--if k ~= love.key_enter then
-	--	strName = strName .. string.char(k)
-	--end
-
-	--if gamestate == "title" then
-	--	if key == "s" then
-	--		gamestate = "playing"
-	--	end
-	--end
-	
         if gamestate == "user" then
 	  if k == "backspace" then
 	      	local byteoffset = utf8.offset(playername, -1)
@@ -172,14 +161,32 @@ function love.keypressed(k)
 		end
 	  end
         end
+        
+        --q is for quit this shit (actually no, make that f12)
+        if gamestate ~= "user" then
+          if k == 'f12' then
+            love.event.quit()
+          end
+        end
+
 end
 
 function love.update(deltatime)
 
 	if gamestate == "title" then
-		if love.keyboard.isDown("s") then
+		if love.keyboard.isDown("space") then
 			gamestate = "user"
 		end
+                kickoff = kickoff + deltatime
+                if kickoff > 8 then
+                  kickoff = 9
+                  
+                  if startkey == blankface then
+                    startkey = spaceface
+                  else
+                    blankface = spaceface
+                  end
+                end
 	elseif gamestate == "user" then
 		if love.keyboard.isDown("return", "enter") then
 			gamestate = "playing"
@@ -231,7 +238,9 @@ function love.draw()
 
 	if gamestate == "title" then
 		love.graphics.draw(splashvid, 0, 0)
-                --need to print a blinking "press s to start" 
+                --need to print a blinking "Touch space to start" 
+                love.graphics.printf(startkey, 280, 30, love.graphics.getWidth())
+
 	
 	elseif gamestate == "user" then
 		
@@ -285,6 +294,10 @@ function love.draw()
                           love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
                   end
           end
+
+          -- draw fuckerygons
+          --draft:rhombus(400, 200, 65, 65)
+
 	end
 end
 
