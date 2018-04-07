@@ -89,7 +89,7 @@ function love.load()
         kickoff = 0
 
 	gamestate = "title"
-  love.graphics.setFont(font)	
+	love.graphics.setFont(font)	
 	entername = "Who are you"
 	playername = ""
 	love.keyboard.setKeyRepeat(true)
@@ -105,7 +105,7 @@ function love.load()
 	height = love.graphics.getHeight() - margin
 	x0,y0 = width/2, height/2
 
-  love.graphics.setFont(font)
+	love.graphics.setFont(font)
 
 	hue = random(0,255)
 	colorIndex = random(1,6)
@@ -130,34 +130,36 @@ function love.load()
 end
 
 function love.textinput(t)
-      if gamestate == "user" then
-	playername = playername .. t
-      end
+	if gamestate == "user" then
+		if t ~= " " then
+			playername = playername .. t
+		end
+	end
 end
 
 function love.keypressed(k)
-        if gamestate == "title" then
-          if k == "space" then
-                  gamestate = "user"
-          end
-        end
-
-        if gamestate == "user" then
-	  if k == "backspace" then
-	      	local byteoffset = utf8.offset(playername, -1)
-
-		if byteoffset then
-			playername = string.sub(playername, 1, byteoffset - 1)
+	if gamestate == "title" then
+		if k == "space" then
+			  gamestate = "user"
+			  
 		end
-	  end
-        end
-        
-        --q is for quit this shit (actually no, make that f12)
-        if gamestate ~= "user" then
-          if k == 'f12' then
-            love.event.quit()
-          end
-        end
+	end
+	if gamestate == "user" then
+		if k == "backspace" then
+			local byteoffset = utf8.offset(playername, -1)
+
+			if byteoffset then
+				playername = string.sub(playername, 1, byteoffset - 1)
+			end
+		end
+	end
+
+	--q is for quit this shit (actually no, make that f12)
+	if gamestate ~= "user" then
+		if k == 'f12' then
+			love.event.quit()
+		end
+	end
 
 end
 
@@ -167,57 +169,51 @@ function love.update(deltatime)
 		if love.keyboard.isDown("space") then
 			gamestate = "user"
 		end
-                kickoff = kickoff + deltatime
-                if kickoff > 8 then
-                  kickoff = 9
-                  
-                  if startkey == blankface then
-                    startkey = spaceface
-                  else
-                    blankface = spaceface
-                  end
-                end
+		kickoff = kickoff + deltatime
+		if kickoff > 8 then
+		  kickoff = 9
+		  
+		  if startkey == blankface then
+			startkey = spaceface
+		  else
+			blankface = spaceface
+		  end
+		end
 	elseif gamestate == "user" then
 		if love.keyboard.isDown("return", "enter") then
 			gamestate = "playing"
 		end
-	
 	else
 
-          local buf = serial:read(64, 0)
-		  if ( buf:len() > 0 ) then
-			amp = 255 * (1 - string.byte(buf) / 1024)
-		  end
-          -- adjust threshold slightly under max amp from heart monitor
-          maxAmp = max(amp, maxAmp)
-          threshold = maxAmp - 20
+		local buf = serial:read(64, 0)
+		if ( buf:len() > 0 ) then
+			amp = 255 * (string.byte(buf) / 1024)
+		end
+		-- adjust threshold slightly under max amp from heart monitor
+		maxAmp = max(amp, maxAmp)
+		threshold = maxAmp - 20
 
-          bps = scale * bpm / 60
-          r = r + bps / 10
+		bps = scale * bpm / 60
+		r = r + bps / 10
 
-          -- detect bpm from ekg peak
-          if ( rising == false and amp > threshold ) then
-                  rising = true
-                  tap()
-          elseif ( rising == true and amp <= threshold ) then
-                  rising = false
-          end
+		-- detect bpm from ekg peak
+		if ( rising == false and amp > threshold ) then
+			rising = true
+			tap()
+		elseif ( rising == true and amp <= threshold ) then
+			rising = false
+		end
 
-          List.push(points, amp)
-          if ( points.last >= graphLength ) then
-                  List.shift(points)
-          end
+		List.push(points, amp)
+		if ( points.last >= graphLength ) then
+			List.shift(points)
+		end
 
-          if udp then --and dt > updaterate then
-
-                  data = string.format("%s %d,%d,%d,%f,%d,%f", playername, playerColor.r, playerColor.g, playerColor.b, bps, amp, r)
-
-                  --data = string.format("%s %d,%f,%d,%f", playername, hue, bps, amp, r)
-
-
-                  udp:send(data)
-                  dt = 0
-          end
+		if udp then --and dt > updaterate then
+			data = string.format("%s %d,%d,%d,%f,%d,%f", playername, playerColor.r, playerColor.g, playerColor.b, bps, amp, r)
+			udp:send(data)
+			dt = 0
+		end
 	end
 	love.timer.sleep(.01)
 end
@@ -228,10 +224,9 @@ function love.draw()
 
 	if gamestate == "title" then
 		love.graphics.draw(splashvid, 0, 0)
-                --need to print a blinking "Touch space to start" 
-                love.graphics.printf(startkey, 280, 30, love.graphics.getWidth())
-
-	
+		--need to print a blinking "Touch space to start" 
+		love.graphics.printf(startkey, 280, 30, love.graphics.getWidth())
+			
 	elseif gamestate == "user" then
 		
 		love.graphics.printf(entername, 100, 100, love.graphics.getWidth())
@@ -239,80 +234,72 @@ function love.draw()
 
 	elseif gamestate == "playing" then
 
-          love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
-          --love.graphics.print(bpm, 10,30)
-          love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
-          love.graphics.setLineWidth(4)
-          x1, y1 = cos(dtheta), sin(dtheta)
-          x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
-          x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
+		love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
+		--love.graphics.print(bpm, 10,30)
+		love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
+		love.graphics.setLineWidth(4)
+		x1, y1 = cos(dtheta), sin(dtheta)
+		x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+		x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 
-          -- render avatar with tracer
-          love.graphics.setCanvas(avatar)
-                  love.graphics.draw(tracer)
-                  love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
-                  love.graphics.push()
-                          love.graphics.translate(x0, y0)
-                          love.graphics.rotate(r)
-                          love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-                  love.graphics.pop()
+		-- render avatar with tracer
+		love.graphics.setCanvas(avatar)
+			love.graphics.draw(tracer)
+			love.graphics.setColor( HSL(hue,s,l, amp / 255 * 127 + 128) )
+			love.graphics.push()
+				love.graphics.translate(x0, y0)
+				love.graphics.rotate(r)
+				love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+			love.graphics.pop()
 
-          -- render tracer image
-          love.graphics.setCanvas(tracer)
-                  love.graphics.clear()
-                  love.graphics.draw(avatar)
-          love.graphics.setCanvas()
+		-- render tracer image
+		love.graphics.setCanvas(tracer)
+			love.graphics.clear()
+			love.graphics.draw(avatar)
+		love.graphics.setCanvas()
 
-          love.graphics.draw(avatar)
+		love.graphics.draw(avatar)
 
+		-- draw ekg graph
+		if points.last >= 0 then
+			local pts = {}
+			for j=points.first,points.last do
+				local x,y = (j-points.first), 50 - 50 * points[j] / 255
+				table.insert(pts, width-graphLength + x)
+				table.insert(pts, y)
+			end
 
+			love.graphics.setColor(HSL(hue, s, l, a))
+			if ( table.getn(pts) >= 4 ) then
+				love.graphics.setLineWidth(1)
+				love.graphics.line(pts)
 
-          -- draw ekg graph
-          if points.last >= 0 then
-                  local pts = {}
-                  for j=points.first,points.last do
-                          local x,y = (j-points.first), 50 - 50 * points[j] / 255
-                          table.insert(pts, width-graphLength + x)
-                          table.insert(pts, y)
-                  end
+				love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
+			end
+		end
 
-                  love.graphics.setColor(HSL(hue, s, l, a))
-                  if ( table.getn(pts) >= 4 ) then
-                          love.graphics.setLineWidth(1)
-                          love.graphics.line(pts)
-
-                          love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
-                  end
-          end
-
-          -- draw fuckerygons
-          --draft:rhombus(400, 200, 65, 65)
+		-- draw fuckerygons
+		--draft:rhombus(400, 200, 65, 65)
 
 	end
 end
 
 
 function tap()
-	  local msecs = love.timer.getTime() * 1000
-	  if ((msecs - msecsPrevious) > 1000 * resetDelay) then
-	    tapCount = 0;
-	  end
+	local msecs = love.timer.getTime() * 1000
+	if ((msecs - msecsPrevious) > 1000 * resetDelay) then
+		tapCount = 0;
+	end
 
-	  if (tapCount == 0) then
-	    msecsFirst = msecs;
-	    tapCount = 1;
-	  else
-	    bpmAvg = 60000 * tapCount / (msecs - msecsFirst);
-	    bpm = math.floor(bpmAvg) -- * 100) / 100;
-	    tapCount = tapCount + 1
-		end
-	  msecsPrevious = msecs;
-end
-
-function oscToFloat(bytes)
-	local result = 0
-
-	return result
+	if (tapCount == 0) then
+		msecsFirst = msecs;
+		tapCount = 1;
+	else
+		bpmAvg = 60000 * tapCount / (msecs - msecsFirst);
+		bpm = math.floor(bpmAvg) -- * 100) / 100;
+		tapCount = tapCount + 1
+	end
+	msecsPrevious = msecs;
 end
 
 function getIP()
