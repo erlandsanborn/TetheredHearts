@@ -12,9 +12,9 @@ local draft = Draft()
 
 local gamestate = "title"
 local utf8 = require("utf8")
+local Serial = require('periphery').Serial
 
-local GPIO = require('periphery').GPIO
-local HEART_PIN = 10
+local serial = Serial("/dev/ttyS0", 115200)
 
 local width, height = 400, 400
 local graphLength = 50
@@ -116,7 +116,7 @@ function love.load()
 	love.graphics.setLineWidth(4)
 
 	ip = getIP()
-	--initGPIO()
+	
 
 	udp = socket.udp()
 	udp:settimeout(0)
@@ -127,16 +127,6 @@ function love.load()
 	graphLength = width / 2 - margin
 	points = List:new()
 
-end
-
-function initGPIO()
-	--local gpio_in = GPIO(HEART_PIN, "in")
-
-	--local value = gpio_in:read()
-	--gpio_out:write(not value)
-
-	--gpio_in:close()
-	--gpio_out:close()
 end
 
 function love.textinput(t)
@@ -194,10 +184,10 @@ function love.update(deltatime)
 	
 	else
 
-          -- amp = gpio_in:read()
-          amp = amp + inc
-          if ( amp >= 255 ) then amp = 0 end
-
+          local buf = serial:read(64, 0)
+		  if ( buf:len() > 0 ) then
+			amp = 255 * (string.byte(buf) / 1024)
+		  end
           -- adjust threshold slightly under max amp from heart monitor
           maxAmp = max(amp, maxAmp)
           threshold = maxAmp - 20
