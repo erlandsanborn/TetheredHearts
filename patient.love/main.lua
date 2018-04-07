@@ -186,7 +186,7 @@ function love.update(deltatime)
 
           local buf = serial:read(64, 0)
 		  if ( buf:len() > 0 ) then
-			amp = 255 * (string.byte(buf) / 1024)
+			amp = 255 * (1 - string.byte(buf) / 1024)
 		  end
           -- adjust threshold slightly under max amp from heart monitor
           maxAmp = max(amp, maxAmp)
