@@ -79,7 +79,7 @@ function love.draw()
 		if player.points.last >= 0 then
 			local pts = {}
 			for j=player.points.first,player.points.last do
-				local x,y = (j-player.points.first), graphHeight * player.points[j] / 255
+				local x,y = (j-player.points.first), 50 - graphHeight * player.points[j] / 255
 				table.insert(pts, width-graphLength + x)
 				table.insert(pts, y)
 			end
