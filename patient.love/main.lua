@@ -7,6 +7,7 @@
 -- 		sudo luarocks install lua-periphery
 
 require("cavity")
+require("color")
 local Draft = require("draft")
 local draft = Draft()
 
@@ -64,15 +65,12 @@ local inc = 0
 --  print(url, ...)
 --end
 local colors = {}
-table.insert(colors, {r=255,g=0,b=0} )
 table.insert(colors, {r=255,g=20,b=147} )
 
-table.insert(colors, {r=106,g=90,b=205} )
 table.insert(colors, {r=65,g=105,b=225} )
 
 table.insert(colors, {r=152,g=251,b=152} )
-table.insert(colors, {r=0,g=255,b=127} )
-local playerColor = colors[1];
+--local playerColor = colors[1];
 
 
 splashvid = love.graphics.newVideo("splash.ogv")
@@ -112,8 +110,8 @@ function love.load()
 	love.graphics.setFont(font)
 
 	hue = random(0,255)
-	colorIndex = random(1,6)
-	playerColor = colors[colorIndex]
+	--colorIndex = random(0,table.getn(colors)-1)
+	--playerColor = colors[colorIndex]
 	
 	love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b ) --HSL(hue,s,l,a) )
 	love.graphics.setBackgroundColor(0,0,0)
@@ -198,20 +196,20 @@ function love.update(deltatime)
 			gamestate = "playing"
 		end
 	else
-		-- cycle through colors
-		if love.keyboard.isDown("right") then
-			colorIndex = colorIndex + 1
-			if colorIndex > 6 then
-				colorIndex = 1
-			end
-			playerColor = colors[colorIndex]
-	
+		
+		if love.keyboard.isDown("up") and tracerAmount + 1 <= 255 then
+			tracerAmount = tracerAmount + 1
+		end
+		if love.keyboard.isDown("down") and tracerAmount - 1 >= 0 then
+			tracerAmount = tracerAmount - 1
 		end
 		
 		local buf = serial:read(64, 0)
 		if ( buf:len() > 0 ) then
 			amp = 255 * (string.byte(buf) / 1024)
 		end
+		
+		
 		-- adjust threshold slightly under max amp from heart monitor
 		maxAmp = max(amp, maxAmp)
 		threshold = maxAmp - 20
@@ -293,11 +291,9 @@ function love.draw()
 		love.graphics.printf(playername, 130, 130, love.graphics.getWidth())
 
 	elseif gamestate == "playing" then
-		
-		love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
 		--love.graphics.print(bpm, 10,30)
-		love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
-		
+		--love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
+		love.graphics.setBlendMode("alpha", "alphamultiply")
 		-- render ekg from other patients
 		for name,player in pairs(world) do
 			local pts = {}
@@ -330,14 +326,12 @@ function love.draw()
 		x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 		--love.graphics.setBackgroundColor(10,180,200)
 		
-			
 		-- render avatar with tracer
 		love.graphics.setCanvas(avatar)
-			--love.graphics.clear(0,0,0,0)
-			love.graphics.setBlendMode("replace")
+			love.graphics.clear(0,0,0,0)
 			love.graphics.draw(tracer)
-			love.graphics.setBlendMode("alpha")
-			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b)--, amp / 255 * (255-192) + 192) --HSL(hue,s,l, amp / 255 * 127 + 128) )
+			
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b )--ß, 255)--, amp / 255 * (255-192) + 192) --HSL(hue,s,l, amp / 255 * 127 + 128) )
 			love.graphics.push()
 				love.graphics.translate(x0, y0)
 				love.graphics.rotate(r)
@@ -347,22 +341,37 @@ function love.draw()
 				--x2 * unit, y2 * unit
 				--x3 * unit, y3 * unit
 			love.graphics.pop()
-
+			
+		--love.graphics.setCanvas()
+		
 		-- render tracer image
 		love.graphics.setCanvas(tracer)
 			--love.graphics.clear(0,0,0,0)
 			love.graphics.setColor(0,0,0,10)
 			love.graphics.rectangle('fill', 0,0,love.graphics.getWidth(),love.graphics.getHeight())
-			
-			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, tracerAmount)
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, tracerAmount + amp / 4)
 			love.graphics.draw(avatar)
 			
 		love.graphics.setCanvas()
 		
 		love.graphics.draw(avatar)
-		
+		love.graphics.push()
+				love.graphics.translate(x0, y0)
+				love.graphics.rotate(r)
+				love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b )
+				love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+				-- draw facemelters here
+				--x1 * unit, y1 * unit 
+				--x2 * unit, y2 * unit
+				--x3 * unit, y3 * unit
+			love.graphics.pop()
+			
+		love.graphics.setColor(playerColor.r,playerColor.g,playerColor.b) 
+		love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
+
 		--love.graphics.setBlendMode("add")
 		-- draw ekg graph
+		
 		if points.last >= 0 then
 			local pts = {}
 			for j=points.first,points.last do
