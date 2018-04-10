@@ -75,7 +75,7 @@ function love.draw()
 		--love.graphics.setCanvas()
 		
 		local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
-		love.graphics.setColor( r,g,b ) -- HSL(player.hue,s,l, 255) )
+		love.graphics.setColor( player.r,player.g,player.b ) -- HSL(player.hue,s,l, 255) )
 		love.graphics.print(stats, 10, i * 25 + margin)
 
 		if player.points.last >= 0 then
@@ -103,15 +103,15 @@ function love.draw()
 			-- compute circle alpha, mapped to rotation offset from circle center
 			local dr = 2 * sin((player.rotation + dtheta) * 3) - 1
 			local alpha = (255-100)  * dr / playerCount + 100
-			love.graphics.setBlendMode("add")
-			love.graphics.setColor(r,g,b,alpha) -- HSL(player.hue, s, l, alpha))
+			--love.graphics.setBlendMode("add")
+			love.graphics.setColor(player.r,player.g,player.b,alpha) -- HSL(player.hue, s, l, alpha))
 			love.graphics.circle('fill', x1 * unit, y1 * unit, 0.5 * unit)
 			love.graphics.circle('fill', x2 * unit, y2 * unit, 0.5 * unit)
 			love.graphics.circle('fill', x3 * unit, y3 * unit, 0.5 * unit)
 
 			-- draw triangle
 			love.graphics.rotate(player.rotation)
-			love.graphics.setColor( r, g, b ) --HSL(player.hue,s,l,255)) --player.amp / 255 * 55 + 200) )
+			love.graphics.setColor( player.r, player.g, player.b ) --HSL(player.hue,s,l,255)) --player.amp / 255 * 55 + 200) )
 			love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
 			
 			-- draw facemelters here:
@@ -119,11 +119,11 @@ function love.draw()
 			--x2 * unit, y2 * unit
 			--x3 * unit, y3 * unit
 		love.graphics.pop()
-
+		
 		--love.graphics.setCanvas(player.tracer)
 		--love.graphics.clear(0,0,0,0)
 		love.graphics.draw(player.avatar)
-
+		love.graphics.setBlendMode("alpha")
 		--love.graphics.setCanvas(scene)
 		--love.graphics.setBlendMode("add")
 		--love.graphics.draw(player.avatar)
@@ -174,14 +174,14 @@ function love.update(deltatime)
 					b = tonumber(b),
 					bps = tonumber(rate),
 					rotation = tonumber(rot),
-					ttl = 500,
+					ttl = 10,
 					avatar = love.graphics.newCanvas(),
 					tracer = love.graphics.newCanvas(),
 					ip = host
 				}
 			else
 				world[playerName].bps = tonumber(rate)
-				world[playerName].ttl = 500
+				world[playerName].ttl = 10
 				world[playerName].amp = tonumber(pulse)
 				world[playerName].rotation = tonumber(rot)
 				List.push(world[playerName].points, tonumber(pulse))
@@ -194,7 +194,8 @@ function love.update(deltatime)
 			-- broadcast this player state to other players
 			for name,player in pairs(world) do
 				if ( playerName ~= name ) then
-					local playerUpdate = string.format("%s %d,%d,%d,%f,%d,%f", name, player.r, player.g, player.b, player.bps, player.amp, player.rotation)
+					print(name, playerName)
+					local playerUpdate = string.format("%s %d,%d,%d,%f,%d,%f", name, r,g,b, rate, pulse, rot)
 					udp:sendto(playerUpdate, player.ip, 31338)
 				end
 			end

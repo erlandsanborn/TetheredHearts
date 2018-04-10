@@ -26,7 +26,7 @@ local playername = ""
 local entity
 local updaterate = .1
 local margin = 4
-
+local tracerAmount = 90
 local t, r = 0
 
 local bpm
@@ -93,7 +93,11 @@ function love.load()
 	entername = "Who are you"
 	playername = ""
 	love.keyboard.setKeyRepeat(true)
-
+	
+	love.graphics.setCanvas(avatar)
+	love.graphics.clear(0,0,0,0)
+	love.graphics.setCanvas()
+	
 	randomseed(os.time())
 	bpm = random(60, 80)
 
@@ -110,7 +114,7 @@ function love.load()
 	hue = random(0,255)
 	colorIndex = random(1,6)
 	playerColor = colors[colorIndex]
-	print(colorIndex, playerColor)
+	
 	love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b ) --HSL(hue,s,l,a) )
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setLineWidth(4)
@@ -146,6 +150,7 @@ function love.textinput(t)
 	end
 end
 
+local world = {}
 function love.keypressed(k)
 	if gamestate == "title" then
 		if k == "space" then
@@ -193,7 +198,16 @@ function love.update(deltatime)
 			gamestate = "playing"
 		end
 	else
-
+		-- cycle through colors
+		if love.keyboard.isDown("right") then
+			colorIndex = colorIndex + 1
+			if colorIndex > 6 then
+				colorIndex = 1
+			end
+			playerColor = colors[colorIndex]
+	
+		end
+		
 		local buf = serial:read(64, 0)
 		if ( buf:len() > 0 ) then
 			amp = 255 * (string.byte(buf) / 1024)
@@ -229,21 +243,38 @@ function love.update(deltatime)
 			-- use data from other players here
 			patientName, attributes = serverdata:match("(%S*) (.*)")
 			red,grn,blu,playerRate,playerAmp,playerRot = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
-			
+			if world[patientName] == nil then
+				local pts = List:new()
+				List.push(pts, tonumber(playerAmp))
+				world[patientName] = {
+					name = patientName,
+					amp = tonumber(playerAmp),
+					points = pts,
+					r = tonumber(red),
+					g = tonumber(grn),
+					b = tonumber(blu),
+					bps = tonumber(playerRate),
+					rotation = tonumber(playerRot),
+					ttl = 10,
+					avatar = love.graphics.newCanvas(),
+					tracer = love.graphics.newCanvas(),
+					ip = serverhost
+				}
+			else
+				world[patientName].bps = tonumber(rate)
+				world[patientName].ttl = 10
+				world[patientName].amp = tonumber(playerAmp)
+				world[patientName].rotation = tonumber(playerRot)
+				List.push(world[patientName].points, tonumber(playerAmp))
+				if ( world[patientName].points.last >= graphLength ) then
+					List.shift(world[patientName].points)
+				end
+
+			end
 		end
 	end
 	
-	--dmt edges
-	--if numSegments > limitUpper and direction == "up" then
-	  --direction = "down"
-	--elseif numSegments < limitLower and direction == "down" then
-	  --direction = "up"
-	--elseif direction == "up" then
-	  --numSegments = numSegments + step
-	--else
-	  --numSegments = numSegments - step
-	--end
-
+	
 	love.timer.sleep(.01)
 end
 
@@ -262,19 +293,51 @@ function love.draw()
 		love.graphics.printf(playername, 130, 130, love.graphics.getWidth())
 
 	elseif gamestate == "playing" then
-
+		
 		love.graphics.print(string.format("%s\t%s bpm", playername, bpm), 10,10)
 		--love.graphics.print(bpm, 10,30)
 		love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
+		
+		-- render ekg from other patients
+		for name,player in pairs(world) do
+			local pts = {}
+		
+			for j=player.points.first,player.points.last do
+				local theta = 2 * pi * (j-player.points.first) / graphLength
+				
+				local x,y = (80 * player.points[j]/255 + unit) * cos(theta), (80 * player.points[j]/255 + unit)*sin(theta)--(j-player.points.first), 50 - 50 * player.points[j] / 255
+				
+				table.insert(pts, x + x0)
+				table.insert(pts, y + y0)
+			end
+			if ( table.getn(pts) >= 4 ) then
+				love.graphics.setColor(player.r, player.g, player.b)
+				love.graphics.setLineWidth(1)
+				--love.graphics.line(pts)
+				local v = draft:line(pts, 'line')
+				
+			end			
+		
+			player.ttl = player.ttl - 1
+			if player.ttl == 0 then
+				world[name] = nil
+			end
+		end
+		
 		love.graphics.setLineWidth(4)
 		x1, y1 = cos(dtheta), sin(dtheta)
 		x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
 		x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
-
+		--love.graphics.setBackgroundColor(10,180,200)
+		
+			
 		-- render avatar with tracer
 		love.graphics.setCanvas(avatar)
+			--love.graphics.clear(0,0,0,0)
+			love.graphics.setBlendMode("replace")
 			love.graphics.draw(tracer)
-			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, amp / 255 * 127 + 128) --HSL(hue,s,l, amp / 255 * 127 + 128) )
+			love.graphics.setBlendMode("alpha")
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b)--, amp / 255 * (255-192) + 192) --HSL(hue,s,l, amp / 255 * 127 + 128) )
 			love.graphics.push()
 				love.graphics.translate(x0, y0)
 				love.graphics.rotate(r)
@@ -287,12 +350,18 @@ function love.draw()
 
 		-- render tracer image
 		love.graphics.setCanvas(tracer)
-			love.graphics.clear()
+			--love.graphics.clear(0,0,0,0)
+			love.graphics.setColor(0,0,0,10)
+			love.graphics.rectangle('fill', 0,0,love.graphics.getWidth(),love.graphics.getHeight())
+			
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, tracerAmount)
 			love.graphics.draw(avatar)
+			
 		love.graphics.setCanvas()
 		
 		love.graphics.draw(avatar)
 		
+		--love.graphics.setBlendMode("add")
 		-- draw ekg graph
 		if points.last >= 0 then
 			local pts = {}
@@ -314,7 +383,7 @@ function love.draw()
 		-- draw fuckerygons
 		--draft:rhombus(400, 200, 65, 65)
 		-- draw fuckerygons for dmt edges
-
+		
 		--love.graphics.setColor(255, 40, 0, 10)
 
 		-- draft:compass(cx, cy, width, arcAngle, startAngle, numSegments, wrap, scale, mode)
