@@ -33,6 +33,7 @@ local t, r = 0
 local bpm
 local scale = .125
 local amp = 0
+local dAmp = 0
 local unit = width/4
 local x0, y0
 local theta = 2 * math.pi / 3
@@ -57,7 +58,7 @@ local tapCount = 0;
 local msecsFirst = 0;
 local msecsPrevious = 0;
 local resetDelay = 2
-
+local tapWindow = 50
 local maxAmp = 0
 
 local inc = 0
@@ -174,6 +175,7 @@ function love.keypressed(k)
 	end
 
 end
+local avgThresh = 0
 
 function love.update(deltatime)
 
@@ -204,16 +206,28 @@ function love.update(deltatime)
 			tracerAmount = tracerAmount - 1
 		end
 		
-		local buf = serial:read(64, 0)
-		if ( buf:len() > 0 ) then
-			amp = 255 * (string.byte(buf) / 1024)
+		eof = false
+		buf = ""
+		while (eof == false) do
+			byte = serial:read(1,0)
+			buf = buf .. byte
+			if ( byte == "\n" ) then
+				eof = true
+			end
 		end
 		
+		if ( buf:len() > 0 ) then
+			amp = tonumber(buf) / 10 --buf:byte() --((string.byte(buf)))-- - 512) / 1024) + .5*			
+		end
 		
-		-- adjust threshold slightly under max amp from heart monitor
-		maxAmp = max(amp, maxAmp)
-		threshold = maxAmp - 20
-
+		if ( table.getn(points) > tapWindow ) then
+			maxAmp = max(points)
+			
+		end
+		
+		--maxAmp = max(amp, maxAmp)
+		threshold = maxAmp - 15
+		--threshold = (threshold + maxAmp)/2 - 15
 		bps = scale * bpm / 60
 		r = r + bps / 10
 
@@ -272,6 +286,16 @@ function love.update(deltatime)
 		end
 	end
 	
+	--dmt edges
+	if numSegments > limitUpper and direction == "up" then
+	  direction = "down"
+	elseif numSegments < limitLower and direction == "down" then
+	  direction = "up"
+	elseif direction == "up" then
+	  numSegments = numSegments + step
+	else
+	  numSegments = numSegments - step
+	end
 	
 	love.timer.sleep(.01)
 end
@@ -301,7 +325,7 @@ function love.draw()
 			for j=player.points.first,player.points.last do
 				local theta = 2 * pi * (j-player.points.first) / graphLength
 				
-				local x,y = (80 * player.points[j]/255 + unit) * cos(theta), (80 * player.points[j]/255 + unit)*sin(theta)--(j-player.points.first), 50 - 50 * player.points[j] / 255
+				local x,y = (player.points[j] + unit) * cos(theta), (player.points[j] + unit)*sin(theta)--(j-player.points.first), 50 - 50 * player.points[j] / 255
 				
 				table.insert(pts, x + x0)
 				table.insert(pts, y + y0)
@@ -336,7 +360,7 @@ function love.draw()
 				love.graphics.translate(x0, y0)
 				love.graphics.rotate(r)
 				love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-				-- draw facemelters here
+				-- draw facemelters here? will be altered by tracer
 				--x1 * unit, y1 * unit 
 				--x2 * unit, y2 * unit
 				--x3 * unit, y3 * unit
@@ -349,7 +373,9 @@ function love.draw()
 			--love.graphics.clear(0,0,0,0)
 			love.graphics.setColor(0,0,0,10)
 			love.graphics.rectangle('fill', 0,0,love.graphics.getWidth(),love.graphics.getHeight())
-			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, tracerAmount + amp / 4)
+			--love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, tracerAmount + amp / 4)
+			local beat = math.cos(math.mod(r, pi/8) / (pi/8))
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b, tracerAmount + 120 * beat)
 			love.graphics.draw(avatar)
 			
 		love.graphics.setCanvas()
@@ -375,7 +401,7 @@ function love.draw()
 		if points.last >= 0 then
 			local pts = {}
 			for j=points.first,points.last do
-				local x,y = (j-points.first), 50 - 50 * points[j] / 255
+				local x,y = (j-points.first), maxAmp + 10 - points[j]
 				table.insert(pts, width-graphLength + x)
 				table.insert(pts, y)
 			end
@@ -385,8 +411,11 @@ function love.draw()
 				love.graphics.setLineWidth(1)
 				love.graphics.line(pts)
 
-				love.graphics.line(width-graphLength - 5, 50 - threshold/255 * 50, width, 50 - threshold/255 * 50)
+				--love.graphics.line(width-graphLength - 5, maxAmp + 10 - threshold, width, maxAmp + 10 - threshold)
+				--love.graphics.line(width-tapWindow - 5, 0, width - tapWindow - 5, maxAmp + 10)
+				
 			end
+			
 		end
 
 		-- draw fuckerygons
@@ -396,11 +425,11 @@ function love.draw()
 		--love.graphics.setColor(255, 40, 0, 10)
 
 		-- draft:compass(cx, cy, width, arcAngle, startAngle, numSegments, wrap, scale, mode)
-		--local v = draft:compass(400, 225, 300, 60, 180, 8, wrap, scale, mode)
+		local v = draft:compass(x0, y0, width + 50, 60, 180, numSegments, wrap, scale, mode)
 
 		-- draft:egg(cx, cy, width, syBottom, syTop, numSegments, mode)
-		-- local v = draft:egg(400, 225, 300, 1, 1, numSegments, 'line')
-
+		--local v = draft:egg(x0, y0, 300, 1, 1, numSegments, 'line')
+		draft:linkWeb(v)
 		-- draft:circle(cx, cy, radius, numSegments, mode)
 		--local v1 = draft:circle(400, 225, 300, numSegments, 'line')
 
@@ -413,6 +442,7 @@ end
 
 
 function tap()
+	
 	local msecs = love.timer.getTime() * 1000
 	if ((msecs - msecsPrevious) > 1000 * resetDelay) then
 		tapCount = 0;
@@ -453,7 +483,16 @@ function List.shift(list)
 	list.first = first + 1
 	return value
 end
-
+function max(t)
+    if #t == 0 then return nil, nil end
+    local value = t[t.last - tapWindow]
+    for i = t.last - tapWindow - 1, t.last do
+        if value < t[i] then
+            value = t[i]
+        end
+    end
+    return value
+end
 function HSL(h, s, l, a)
 	if s<=0 then return l,l,l,a end
 	h, s, l = h/256*6, s/255, l/255

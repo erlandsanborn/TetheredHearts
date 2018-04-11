@@ -194,7 +194,6 @@ function love.update(deltatime)
 			-- broadcast this player state to other players
 			for name,player in pairs(world) do
 				if ( playerName ~= name ) then
-					print(name, playerName)
 					local playerUpdate = string.format("%s %d,%d,%d,%f,%d,%f", name, r,g,b, rate, pulse, rot)
 					udp:sendto(playerUpdate, player.ip, 31338)
 				end
