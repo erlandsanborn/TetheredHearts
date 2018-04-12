@@ -15,8 +15,8 @@ local gamestate = "title"
 local utf8 = require("utf8")
 local Serial = require('periphery').Serial
 
-local serial = Serial("/dev/ttyS0", 115200)
---local serial = Serial("/dev/ttyAMA0", 115200)
+--local serial = Serial("/dev/ttyS0", 115200)
+local serial = Serial("/dev/ttyAMA0", 115200)
 
 local width, height = 400, 400
 local graphLength = 50
@@ -209,12 +209,14 @@ function love.update(deltatime)
 		
 		eof = false
 		buf = ""
-		while (eof == false) do
+		local timeout = 1000
+		while (eof == false and timeout > 0) do
 			byte = serial:read(1,0)
 			buf = buf .. byte
 			if ( byte == "\n" ) then
 				eof = true
 			end
+			timeout = timeout - 1
 		end
 		
 		if ( buf:len() > 0 ) then
