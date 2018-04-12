@@ -219,7 +219,7 @@ function love.update(deltatime)
 			timeout = timeout - 1
 		end
 		
-		if ( buf:len() > 0 ) then
+		if ( buf ~= nil and buf:len() > 0 ) then
 			amp = tonumber(buf) / 10 --buf:byte() --((string.byte(buf)))-- - 512) / 1024) + .5*			
 		end
 		
