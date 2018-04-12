@@ -15,7 +15,8 @@ local gamestate = "title"
 local utf8 = require("utf8")
 local Serial = require('periphery').Serial
 
-local serial = Serial("/dev/ttyS0", 115200)
+--local serial = Serial("/dev/ttyS0", 115200)
+local serial = Serial("/dev/ttyAMA0", 115200)
 
 local width, height = 400, 400
 local graphLength = 50
