@@ -109,23 +109,51 @@ function renderStats()
 	end
 	love.graphics.setCanvas()
 end
+function renderCircles()
+	love.graphics.setCanvas(circles)
+	love.graphics.clear(0,0,0,0)
+	love.graphics.setBlendMode("alpha")
+	for name,player in pairs(world) do
+		love.graphics.push()
+			love.graphics.translate(x0, y0)
+			love.graphics.setLineWidth(4)
 
+			-- compute circle alpha, mapped to rotation offset from circle center
+			local dr = 2 * sin((player.rotation + dtheta) * 3) - 1
+			local alpha = (255-100)  * dr / playerCount + 100
+			--love.graphics.setBlendMode("add")
+			love.graphics.setColor(player.r,player.g,player.b,alpha) -- HSL(player.hue, s, l, alpha))
+			love.graphics.circle('fill', x1 * unit, y1 * unit, 0.5 * unit)
+			love.graphics.circle('fill', x2 * unit, y2 * unit, 0.5 * unit)
+			love.graphics.circle('fill', x3 * unit, y3 * unit, 0.5 * unit)
+			
+			-- draw facemelters here:
+			--x1 * unit, y1 * unit 
+			--x2 * unit, y2 * unit
+			--x3 * unit, y3 * unit
+		love.graphics.pop()
+	end
+	love.graphics.setCanvas()
+end
 function renderPlayerCanvas() 
 	
+	
 	love.graphics.setBlendMode("alpha")
-
+	i = 0
 	love.graphics.setCanvas(players)
 		love.graphics.clear(0,0,0,0)
-
-	i = 0	
+	--love.graphics.setCanvas()
+	
 	for name,player in pairs(world) do
 		players:renderTo(function()
 			love.graphics.draw(player.avatar)
 		end);
-		player.avatar:renderTo(function() 
+		love.graphics.setCanvas(player.avatar)
+		
 			love.graphics.clear(0,0,0,0)
 			
-			-- Render Circles
+			love.graphics.draw(player.tracer)
+			
 			love.graphics.push()
 				love.graphics.translate(x0, y0)
 				love.graphics.setLineWidth(4)
@@ -140,27 +168,45 @@ function renderPlayerCanvas()
 				love.graphics.circle('fill', x3 * unit, y3 * unit, 0.5 * unit)
 				
 				-- draw facemelters here:
-				
+				--x1 * unit, y1 * unit 
+				--x2 * unit, y2 * unit
+				--x3 * unit, y3 * unit
 			love.graphics.pop()
 			
-			-- Render Triangle and tracer triangles
-			love.graphics.setLineWidth(4)
-			local beat = 255--tracerAmount + 120 * math.cos(math.mod(player.rotation, pi/8) / (pi/8))
-			for dAlpha = 0, beat, beat/16 do
-				local dRot = player.rotation - (pi/8) * (1 - dAlpha / beat)
-			--for dr=player.rotation - pi/16, player.rotation, pi/64 do
-				
-				--local beat = math.cos(math.mod(dr, pi/8) / (pi/8))
-				love.graphics.push()
+			love.graphics.push()
 				love.graphics.translate(x0, y0)
+				love.graphics.setLineWidth(4)
 				
-				love.graphics.setColor( player.r, player.g, player.b, dAlpha) 
-				love.graphics.rotate(dRot)
+				love.graphics.rotate(player.rotation)
+				love.graphics.setColor( player.r, player.g, player.b, 255 ) --HSL(player.hue,s,l,255)) --player.amp / 255 * 55 + 200) )
 				love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
-				love.graphics.pop()
-			end
-
-		end);
+				-- draw facemelter with tracer here:
+				--x1 * unit, y1 * unit 
+				--x2 * unit, y2 * unit
+				--x3 * unit, y3 * unit
+			love.graphics.pop()
+		
+		love.graphics.setCanvas(player.tracer)
+			love.graphics.setColor(0,0,0,250)
+			love.graphics.draw(player.avatar)
+			--love.graphics.rectangle('fill', 0,0,love.graphics.getWidth(),love.graphics.getHeight())
+			
+			--love.graphics.push()
+				--love.graphics.translate(x0, y0)
+				--love.graphics.setLineWidth(4)
+				
+				--love.graphics.rotate(player.rotation)
+				--local beat = math.cos(math.mod(player.rotation, pi/8) / (pi/8))
+				--love.graphics.setColor( player.r, player.g, player.b, tracerAmount + 120 * beat)
+				--love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
+				---- draw facemelter with tracer here:
+				----x1 * unit, y1 * unit 
+				----x2 * unit, y2 * unit
+				----x3 * unit, y3 * unit
+			--love.graphics.pop()
+		
+		--
+		love.graphics.setCanvas()
 		
 		player.ttl = player.ttl - 1
 
@@ -174,15 +220,16 @@ end
 
 function love.draw()
 	t = love.timer.getTime()
+	
 	love.graphics.setBlendMode("alpha", "premultiplied")
 	drawBackground()
 	love.graphics.setCanvas()
 	love.graphics.draw(background)
 	
-	love.graphics.setCanvas()
 	renderPlayerCanvas()
 	love.graphics.setCanvas()
 	love.graphics.draw(players)
+	
 	
 	-- calculate offset between other players, trigger visuals
 	for name,player in pairs(world) do 
@@ -200,6 +247,14 @@ function love.draw()
 		end
 		
 	end
+	
+	
+	
+	
+	
+	
+	
+	
 	--renderStats()
 	--love.graphics.setCanvas()
 	--love.graphics.setBlendMode("alpha")
@@ -329,4 +384,3 @@ function love.keypressed(k)
 		love.event.quit()
 	end
 end
-

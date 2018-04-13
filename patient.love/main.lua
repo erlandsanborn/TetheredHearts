@@ -15,8 +15,8 @@ local gamestate = "title"
 local utf8 = require("utf8")
 local Serial = require('periphery').Serial
 
---local serial = Serial("/dev/ttyS0", 115200)
-local serial = Serial("/dev/ttyAMA0", 115200)
+local serial = Serial("/dev/ttyS0", 115200)
+--local serial = Serial("/dev/ttyAMA0", 115200)
 
 local width, height = 400, 400
 local graphLength = 50
@@ -81,6 +81,7 @@ splashvid = love.graphics.newVideo("splash.ogv")
 function love.load()
 
 	splashvid:play()
+	love.mouse.setVisible(false)
 
         --create startkey text with wait/timer
         blankface = ""
@@ -219,8 +220,8 @@ function love.update(deltatime)
 			timeout = timeout - 1
 		end
 		
-		if ( buf ~= nil and buf:len() > 0 ) then
-			amp = tonumber(buf) / 10 --buf:byte() --((string.byte(buf)))-- - 512) / 1024) + .5*			
+		if ( buf ~= nil and buf:len() > 0 and tonumber(buf) ~= nil ) then
+			amp = .5 * (amp + tonumber(buf) / 10) --buf:byte() --((string.byte(buf)))-- - 512) / 1024) + .5*			
 		end
 		
 		if ( table.getn(points) > tapWindow ) then
@@ -229,7 +230,7 @@ function love.update(deltatime)
 		end
 		
 		--maxAmp = max(amp, maxAmp)
-		threshold = maxAmp - 15
+		threshold = maxAmp - 20
 		--threshold = (threshold + maxAmp)/2 - 15
 		bps = scale * bpm / 60
 		r = r + bps / 10
@@ -238,7 +239,7 @@ function love.update(deltatime)
 		if ( rising == false and amp > threshold ) then
 			rising = true
 			tap()
-		elseif ( rising == true and amp <= threshold ) then
+		elseif ( rising == true and amp < threshold - 10 ) then
 			rising = false
 		end
 
@@ -358,7 +359,7 @@ function love.draw()
 			love.graphics.clear(0,0,0,0)
 			love.graphics.draw(tracer)
 			
-			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b )--ß, 255)--, amp / 255 * (255-192) + 192) --HSL(hue,s,l, amp / 255 * 127 + 128) )
+			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b )--, 255)--, amp / 255 * (255-192) + 192) --HSL(hue,s,l, amp / 255 * 127 + 128) )
 			love.graphics.push()
 				love.graphics.translate(x0, y0)
 				love.graphics.rotate(r)
@@ -414,8 +415,8 @@ function love.draw()
 				love.graphics.setLineWidth(1)
 				love.graphics.line(pts)
 
-				--love.graphics.line(width-graphLength - 5, maxAmp + 10 - threshold, width, maxAmp + 10 - threshold)
-				--love.graphics.line(width-tapWindow - 5, 0, width - tapWindow - 5, maxAmp + 10)
+				love.graphics.line(width-graphLength - 5, maxAmp + 10 - threshold, width, maxAmp + 10 - threshold)
+				love.graphics.line(width-tapWindow - 5, 0, width - tapWindow - 5, maxAmp + 10)
 				
 			end
 			
@@ -428,7 +429,7 @@ function love.draw()
 		--love.graphics.setColor(255, 40, 0, 10)
 
 		-- draft:compass(cx, cy, width, arcAngle, startAngle, numSegments, wrap, scale, mode)
-		local v = draft:compass(x0, y0, width + 50, 60, 180, numSegments, wrap, scale, mode)
+		local v = draft:compass(x0, y0, 1.5 * width, 60, 180, numSegments, wrap, scale, mode)
 
 		-- draft:egg(cx, cy, width, syBottom, syTop, numSegments, mode)
 		--local v = draft:egg(x0, y0, 300, 1, 1, numSegments, 'line')
@@ -445,7 +446,7 @@ end
 
 
 function tap()
-	
+	print("tap", tapCount)
 	local msecs = love.timer.getTime() * 1000
 	if ((msecs - msecsPrevious) > 1000 * resetDelay) then
 		tapCount = 0;
@@ -489,7 +490,7 @@ end
 function max(t)
     if #t == 0 then return nil, nil end
     local value = t[t.last - tapWindow]
-    for i = t.last - tapWindow - 1, t.last do
+    for i = t.last - tapWindow + 1, t.last do
         if value < t[i] then
             value = t[i]
         end
