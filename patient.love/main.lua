@@ -328,7 +328,7 @@ function love.draw()
 		--love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
 		love.graphics.setBlendMode("alpha")
 		
-		-- render ekg from other patients
+		-- render ekg, draft lines from other patients
 		for name,player in pairs(world) do
 			local pts = {}
 		
@@ -346,7 +346,24 @@ function love.draw()
 				--love.graphics.line(pts)
 				local v = draft:line(pts, 'line')
 				
-			end			
+			end	
+			
+			-- draw fuckerygons		
+			love.graphics.push()
+				local beat = 160 * math.cos(math.mod(player.rotation, pi/8) / (pi/8)) + 20
+				love.graphics.setColor(playerColor.r, playerColor.g, playerColor.b, beat) 			
+				
+				love.graphics.translate(x0, y0)
+				--love.graphics.rotate(r)
+				love.graphics.setLineWidth(1)
+				local corner1 = draft:compass(x1 * unit, y1 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+				local corner2 = draft:compass(x2 * unit, y2 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+				local corner3 = draft:compass(x3 * unit, y3 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+				
+				draft:linkWeb(corner1)
+				draft:linkWeb(corner2)
+				draft:linkWeb(corner3)
+			love.graphics.pop()		
 		
 			player.ttl = player.ttl - 1
 			if player.ttl == 0 then
@@ -427,7 +444,7 @@ function love.draw()
 
 		-- draw fuckerygons		
 		love.graphics.push()
-			local beat = 200 * math.cos(math.mod(r, pi/8) / (pi/8) + 32)
+			local beat = 160 * math.cos(math.mod(r, pi/8) / (pi/8)) + 20
 			love.graphics.setColor(playerColor.r, playerColor.g, playerColor.b, beat) 			
 			
 			love.graphics.translate(x0, y0)
