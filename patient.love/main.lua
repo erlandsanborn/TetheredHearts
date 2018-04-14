@@ -319,9 +319,15 @@ function love.draw()
 		love.graphics.printf(playername, 130, 130, love.graphics.getWidth())
 
 	elseif gamestate == "playing" then
+		
+		x1, y1 = cos(dtheta), sin(dtheta)
+		x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
+		x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
+		
 		--love.graphics.print(bpm, 10,30)
 		--love.graphics.print(love.timer.getFPS(), 15, height - 15 - 25)
-		love.graphics.setBlendMode("alpha", "alphamultiply")
+		love.graphics.setBlendMode("alpha")
+		
 		-- render ekg from other patients
 		for name,player in pairs(world) do
 			local pts = {}
@@ -335,7 +341,7 @@ function love.draw()
 				table.insert(pts, y + y0)
 			end
 			if ( table.getn(pts) >= 4 ) then
-				love.graphics.setColor(player.r, player.g, player.b)
+				love.graphics.setColor(player.r, player.g, player.b, 255)
 				love.graphics.setLineWidth(1)
 				--love.graphics.line(pts)
 				local v = draft:line(pts, 'line')
@@ -349,17 +355,14 @@ function love.draw()
 		end
 		
 		love.graphics.setLineWidth(4)
-		x1, y1 = cos(dtheta), sin(dtheta)
-		x2, y2 = cos(theta + dtheta), sin(theta + dtheta)
-		x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
-		--love.graphics.setBackgroundColor(10,180,200)
 		
 		-- render avatar with tracer
 		love.graphics.setCanvas(avatar)
 			love.graphics.clear(0,0,0,0)
-			love.graphics.draw(tracer)
+			
 			
 			love.graphics.setColor( playerColor.r, playerColor.g, playerColor.b )--, 255)--, amp / 255 * (255-192) + 192) --HSL(hue,s,l, amp / 255 * 127 + 128) )
+			love.graphics.draw(tracer)
 			love.graphics.push()
 				love.graphics.translate(x0, y0)
 				love.graphics.rotate(r)
@@ -422,25 +425,23 @@ function love.draw()
 			
 		end
 
-		-- draw fuckerygons
-		--draft:rhombus(400, 200, 65, 65)
-		-- draw fuckerygons for dmt edges
+		-- draw fuckerygons		
+		love.graphics.push()
+			local beat = 200 * math.cos(math.mod(r, pi/8) / (pi/8) + 32)
+			love.graphics.setColor(playerColor.r, playerColor.g, playerColor.b, beat) 			
+			
+			love.graphics.translate(x0, y0)
+			--love.graphics.rotate(r)
+			love.graphics.setLineWidth(1)
+			local corner1 = draft:compass(x1 * unit, y1 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+			local corner2 = draft:compass(x2 * unit, y2 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+			local corner3 = draft:compass(x3 * unit, y3 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+			
+			draft:linkWeb(corner1)
+			draft:linkWeb(corner2)
+			draft:linkWeb(corner3)
+		love.graphics.pop()
 		
-		--love.graphics.setColor(255, 40, 0, 10)
-
-		-- draft:compass(cx, cy, width, arcAngle, startAngle, numSegments, wrap, scale, mode)
-		local v = draft:compass(x0, y0, 1.5 * width, 60, 180, numSegments, wrap, scale, mode)
-
-		-- draft:egg(cx, cy, width, syBottom, syTop, numSegments, mode)
-		--local v = draft:egg(x0, y0, 300, 1, 1, numSegments, 'line')
-		draft:linkWeb(v)
-		-- draft:circle(cx, cy, radius, numSegments, mode)
-		--local v1 = draft:circle(400, 225, 300, numSegments, 'line')
-
-		-- draft:arc(cx, cy, radius, arcAngle, startAngle, numSegments, mode)
-		--local v2 = draft:arc(400, 225, 360, 30, 60, numSegments, 'line')
-		
-		-- draft:linkTangleWebs(v1, v2)
 	end
 end
 
