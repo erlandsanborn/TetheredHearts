@@ -32,9 +32,9 @@ int patternState = 2; // Keeps track of what the current light pattern is.
 int threshold = 500; // Pulse sensor signal threshold. Change in increments of 5-10 to test.
 int delayVal = 24; // How long the program waits between loops. Lower this to raise the speed.
 int meteorSpacing = 5; // How far apart paired beats appear.
-int meteorHue = 210; // Default meteor color is set to pink/purple.
+int meteorHue = 300; // Default meteor color is set to pink/purple.
 int meteorVal = 160; // Default meteor brightness. 
-int dustHue = 230; // Default dust color.
+int dustHue = 300; // Default dust color.
 int dustVal = 210; // Default dust value.
 int maxDust = 35; // Hardcap on the amount of dust that can be created. If too high, may cause stack overflow.
 int dustValLimit = 26; // Brightness level below which dusts "despawns".
@@ -300,7 +300,7 @@ void playState(){
       else {
          leds[it->getPos()].setHSV(it->getHue(), 255, it->getVal() - it->getShift());
          it->fade(fadeVal);
-         it->shiftHue(hueShift);
+         //it->shiftHue(hueShift);
       }
   }
 /*  buttonState = digitalRead(buttonPin);
