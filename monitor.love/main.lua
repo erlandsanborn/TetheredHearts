@@ -2,6 +2,8 @@
 -- see: https://github.com/Neopallium/lua-handlers
 -- and: https://github.com/aubio/aubio
 require("cavity")
+local Draft = require("draft")
+local draft = Draft()
 
 local socket = require("socket")
 local address, port = home, 31337
@@ -65,7 +67,13 @@ function love.load()
 	x3, y3 = cos(2*theta + dtheta), sin(2*theta + dtheta)
 
 	drawBackground()
-
+	
+	--dmt edges
+	limitUpper = 18
+	limitLower = 6
+	numSegments = limitLower
+	direction = "up"
+	step = 60 / 30000
 end
 
 
@@ -120,7 +128,25 @@ function renderPlayerCanvas()
 	i = 0	
 	for name,player in pairs(world) do
 		players:renderTo(function()
+			love.graphics.setColor(player.r,player.g,player.b,255)
 			love.graphics.draw(player.avatar)
+			local stats = string.format("%s\t%d", name, player.bps * 60 / scale)
+			love.graphics.print(stats, 10, i * 25 + margin)
+
+			if player.points.last >= 0 then
+				local pts = {}
+				for j=player.points.first,player.points.last do
+					local x,y = (j-player.points.first), 50 - graphHeight * player.points[j] / 255
+					table.insert(pts, width-graphLength + x)
+					table.insert(pts, y)
+				end
+
+				if ( table.getn(pts) >= 4 ) then
+					love.graphics.setLineWidth(1)
+					love.graphics.line(pts)
+				end
+			
+			end
 		end);
 		player.avatar:renderTo(function() 
 			love.graphics.clear(0,0,0,0)
@@ -159,8 +185,12 @@ function renderPlayerCanvas()
 				love.graphics.polygon('line', x1 * unit, y1 * unit, x2 * unit, y2 * unit, x3 * unit, y3 * unit)
 				love.graphics.pop()
 			end
-
+			
+			
+			
 		end);
+		
+		
 		
 		player.ttl = player.ttl - 1
 
@@ -174,13 +204,17 @@ end
 
 function love.draw()
 	t = love.timer.getTime()
-	love.graphics.setBlendMode("alpha", "premultiplied")
+	
+	--renderStats()
 	drawBackground()
-	love.graphics.setCanvas()
-	love.graphics.draw(background)
+	renderPlayerCanvas()
+	
+	love.graphics.setBlendMode("alpha")--, "premultiplied")
 	
 	love.graphics.setCanvas()
-	renderPlayerCanvas()
+	love.graphics.setColor(255,255,255,255)
+	love.graphics.draw(background)
+	
 	love.graphics.setCanvas()
 	love.graphics.draw(players)
 	
@@ -200,7 +234,8 @@ function love.draw()
 		end
 		
 	end
-	--renderStats()
+	
+	--
 	--love.graphics.setCanvas()
 	--love.graphics.setBlendMode("alpha")
 	--love.graphics.print(love.timer.getFPS(), margin, height - margin - 25)
@@ -226,7 +261,6 @@ function love.update(deltatime)
 		if data then
 			playerName, attributes = data:match("(%S*) (.*)")
 			r,g,b,rate,pulse,rot = attributes:match("^(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*),(%-?[%d.e]*)$")
-			
 			if world[playerName] == nil then
 				local pts = List:new()
 				List.push(pts, tonumber(pulse))
@@ -239,14 +273,14 @@ function love.update(deltatime)
 					b = tonumber(b),
 					bps = tonumber(rate),
 					rotation = tonumber(rot),
-					ttl = 10,
+					ttl = 200,
 					avatar = love.graphics.newCanvas(),
 					tracer = love.graphics.newCanvas(),
 					ip = host
 				}
 			else
 				world[playerName].bps = tonumber(rate)
-				world[playerName].ttl = 10
+				world[playerName].ttl = 200
 				world[playerName].amp = tonumber(pulse)
 				world[playerName].rotation = tonumber(rot)
 				List.push(world[playerName].points, tonumber(pulse))
@@ -265,6 +299,16 @@ function love.update(deltatime)
 			end
 		end
 	until not data
+	--dmt edges
+	if numSegments > limitUpper and direction == "up" then
+	  direction = "down"
+	elseif numSegments < limitLower and direction == "down" then
+	  direction = "up"
+	elseif direction == "up" then
+	  numSegments = numSegments + step
+	else
+	  numSegments = numSegments - step
+	end
 	
 	playerCount = 0
 	for _ in pairs(world) do playerCount = playerCount + 1 end
@@ -294,6 +338,20 @@ function drawBackground()
 	love.graphics.setCanvas(background)
 		love.graphics.clear(0,0,0,0)
 		love.graphics.setBlendMode('alpha')
+		love.graphics.push()
+			love.graphics.setColor(255,255,255, 128)	
+			love.graphics.translate(x0, y0)
+			--love.graphics.rotate(r)
+			love.graphics.setLineWidth(1)
+			local corner1 = draft:compass(x1 * unit, y1 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+			local corner2 = draft:compass(x2 * unit, y2 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+			local corner3 = draft:compass(x3 * unit, y3 * unit, 600, 30, 180, numSegments, wrap, scale, mode)
+			
+			draft:linkWeb(corner1)
+			draft:linkWeb(corner2)
+			draft:linkWeb(corner3)
+		love.graphics.pop()	
+		
 		love.graphics.setColor(255,255,255,255)
 		love.graphics.setLineWidth(4)
 		love.graphics.circle('line', x0, y0, unit)
